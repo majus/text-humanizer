@@ -45,6 +45,7 @@ export function addToHistory(entry: Partial<HistoryEntry> & { originalText: stri
   const history = getHistory();
   const newEntry: HistoryEntry = {
     ...entry,
+    options: entry.options || { level: 'medium', style: 'academic', tone: 'conversational', targetScore: 80, language: 'en' },
     id: crypto.randomUUID(),
     timestamp: Date.now(),
   };
