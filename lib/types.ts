@@ -127,12 +127,12 @@ export interface HistoryEntry {
   originalText: string;
   humanizedText: string;
   options: HumanizationOptions;
-  wordCount: { input: number; output: number };
+  wordCount?: { input: number; output: number };
   timestamp: number;
-  model: ModelProvider;
-  modelName: string;
-  finalScore: number;
-  passes: number;
+  model?: ModelProvider;
+  modelName?: string;
+  finalScore?: number;
+  passes?: number;
   detection?: DetectionResult;
 }
 

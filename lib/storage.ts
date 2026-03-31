@@ -43,9 +43,14 @@ export function getHistory(): HistoryEntry[] {
 
 export function addToHistory(entry: Partial<HistoryEntry> & { originalText: string; humanizedText: string }): HistoryEntry {
   const history = getHistory();
-  const newEntry: HistoryEntry = {
-    ...entry,
+  const defaults: HistoryEntry = {
+    id: crypto.randomUUID(),
+    timestamp: Date.now(),
+    originalText: entry.originalText,
+    humanizedText: entry.humanizedText,
     options: entry.options || { level: 'medium', style: 'academic', tone: 'conversational', model: 'gemini', targetScore: 80, language: 'en' },
+  };
+  const newEntry = { ...defaults, ...entry, id: defaults.id, timestamp: defaults.timestamp };
     id: crypto.randomUUID(),
     timestamp: Date.now(),
   };
