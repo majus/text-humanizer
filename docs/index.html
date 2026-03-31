@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StealthHumanizer — Free AI Text Humanizer</title>
+<meta name="description" content="Transform AI-generated text into natural human writing. 13+ AI providers, 4 rewrite levels, 13 tones. 100% free and open source.">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--border:#475569;--text:#f8fafc;--text2:#cbd5e1;--text3:#94a3b8;--text4:#64748b;--accent:#22c55e;--accent2:#16a34a;--accent3:#15803d;--red:#ef4444;--yellow:#eab308;--blue:#3b82f6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.container{max-width:1200px;margin:0 auto;padding:0 1rem}
+nav{position:sticky;top:0;z-index:40;border-bottom:1px solid rgba(71,85,105,.5);background:rgba(15,23,42,.9);backdrop-filter:blur(20px);padding:.75rem 0}
+nav .inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:.75rem}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 15px rgba(34,197,94,.25)}
+.logo h1{font-size:1.25rem;font-weight:700}.logo h1 span{color:var(--accent)}
+.logo p{font-size:.7rem;color:var(--text4)}
+.tabs{display:flex;gap:4px;background:rgba(30,41,59,.5);border-radius:12px;padding:4px}
+.tab{padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:500;cursor:pointer;color:var(--text3);border:none;background:none;transition:all .2s}
+.tab.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(34,197,94,.25)}
+.tab:hover:not(.active){color:var(--text);background:rgba(51,65,85,.5)}
+main{padding:1.5rem 0}
+.card{background:rgba(30,41,59,.5);border:1px solid rgba(71,85,105,.5);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+h2{font-size:1.5rem;font-weight:700;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem}
+h2 svg{color:var(--accent)}
+.subtitle{color:var(--text4);font-size:.85rem;margin-bottom:1rem}
+.controls{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1rem}
+.control-group{flex:1;min-width:200px}
+.control-group label{display:block;font-size:.8rem;font-weight:500;color:var(--text3);margin-bottom:.5rem}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.btn{padding:.5rem .75rem;border-radius:8px;font-size:.8rem;font-weight:500;cursor:pointer;border:none;background:var(--bg2);color:var(--text3);transition:all .2s}
+.btn:hover{color:var(--text);background:var(--bg3)}
+.btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(34,197,94,.25)}
+.btn-primary{width:100%;padding:.75rem;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;transition:all .2s;box-shadow:0 4px 15px rgba(34,197,94,.25)}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+textarea{width:100%;min-height:200px;padding:1rem;background:rgba(30,41,59,.5);border:1px solid rgba(71,85,105,.5);border-radius:12px;color:var(--text);font-size:.875rem;line-height:1.7;resize:vertical;font-family:inherit}
+textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(34,197,94,.2)}
+textarea::placeholder{color:var(--text4)}
+.grid{display:grid;gap:1.5rem}
+.grid-2{grid-template-columns:1fr}
+@media(min-width:768px){.grid-2{grid-template-columns:1fr 1fr}}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.output-actions{display:flex;gap:4px}
+.output-actions button{padding:6px;border-radius:6px;border:none;background:rgba(51,65,85,.5);color:var(--text3);cursor:pointer;transition:all .2s}
+.output-actions button:hover{color:var(--text);background:var(--bg3)}
+.output-box{width:100%;min-height:200px;padding:1rem;background:rgba(30,41,59,.5);border:1px solid rgba(71,85,105,.5);border-radius:12px;font-size:.875rem;line-height:1.7;overflow-y:auto;white-space:pre-wrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:.7rem;font-weight:600}
+.badge-green{background:rgba(34,197,94,.2);color:#4ade80}
+.badge-yellow{background:rgba(234,179,8,.2);color:#facc15}
+.badge-red{background:rgba(239,68,68,.2);color:#f87171}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;margin-top:1rem}
+.stat{background:rgba(30,41,59,.5);border:1px solid rgba(71,85,105,.5);border-radius:12px;padding:.75rem;text-align:center}
+.stat .value{font-size:1.25rem;font-weight:700;color:var(--accent)}
+.stat .label{font-size:.7rem;color:var(--text4);margin-top:2px}
+.progress{height:6px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:.75rem}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),#4ade80);border-radius:99px;transition:width .3s}
+.setting-group{margin-bottom:1rem}
+.setting-group h3{font-size:.95rem;font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.provider-card{background:rgba(30,41,59,.5);border:1px solid rgba(71,85,105,.5);border-radius:12px;padding:1rem;margin-bottom:.5rem;cursor:pointer;transition:all .2s}
+.provider-card:hover{border-color:var(--accent);background:rgba(34,197,94,.03)}
+.provider-card.selected{border-color:var(--accent);background:rgba(34,197,94,.05)}
+.provider-card h4{font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+.provider-card p{font-size:.8rem;color:var(--text4);margin-top:2px}
+.provider-card .free{color:#4ade80;font-size:.7rem;font-weight:600}
+.key-input{display:flex;gap:8px;margin-top:.5rem}
+.key-input input{flex:1;padding:.6rem .75rem;background:rgba(15,23,42,.5);border:1px solid rgba(71,85,105,.5);border-radius:8px;color:var(--text);font-size:.85rem}
+.key-input input:focus{outline:none;border-color:var(--accent)}
+.key-input button{padding:.6rem 1rem;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;font-size:.85rem;cursor:pointer}
+select{width:100%;padding:.5rem .75rem;background:var(--bg2);border:1px solid rgba(71,85,105,.5);border-radius:8px;color:var(--text);font-size:.85rem}
+select:focus{outline:none;border-color:var(--accent)}
+.section{display:none}.section.active{display:block}
+.toast{position:fixed;bottom:1rem;right:1rem;padding:.75rem 1rem;border-radius:12px;font-size:.85rem;z-index:50;animation:slideUp .3s ease-out;max-width:350px}
+.toast-success{background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.5);color:#4ade80}
+.toast-error{background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.5);color:#f87171}
+.toast-info{background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.5);color:#60a5fa}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.score-big{font-size:3rem;font-weight:800;text-align:center;margin:.5rem 0}
+.score-label{text-align:center;font-size:.9rem;margin-bottom:1rem}
+.score-bar{height:12px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-bottom:1.5rem}
+.score-fill{height:100%;border-radius:99px;transition:width .3s}
+.sentence{padding:.5rem .75rem;border-radius:8px;margin-bottom:4px;border:1px solid transparent;font-size:.85rem}
+.sentence-human{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3)}
+.sentence-maybe{background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.3)}
+.sentence-ai{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3)}
+.sentence .score{float:right;font-size:.7rem;font-weight:600}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text4)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:.5rem}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.mt{margin-top:1rem}.mb{margin-bottom:1rem}.flex{display:flex}.gap{gap:.5rem}.items-center{align-items:center}
+.footer{text-align:center;padding:2rem 0;color:var(--text4);font-size:.8rem;border-top:1px solid rgba(71,85,105,.3);margin-top:2rem}
+</style>
+</head>
+<body>
+<nav>
+  <div class="container inner">
+    <div class="logo">
+      <div class="logo-icon">🥷</div>
+      <div><h1>Stealth<span>Humanizer</span></h1><p>Free AI Text Humanizer — No Login Required</p></div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="humanizer">✨ Humanizer</button>
+      <button class="tab" data-tab="detector">🔍 Detector</button>
+      <button class="tab" data-tab="settings">⚙️ Settings</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <!-- HUMANIZER -->
+  <div class="section active" id="sec-humanizer">
+    <h2>✨ AI Text Humanizer</h2>
+    <p class="subtitle">Transform AI-generated text into undetectable human writing</p>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Rewrite Level</label>
+        <div class="btn-row" id="level-btns">
+          <button class="btn" data-val="light">🪶 Light</button>
+          <button class="btn active" data-val="medium">✨ Medium</button>
+          <button class="btn" data-val="aggressive">🔥 Aggressive</button>
+          <button class="btn" data-val="ninja">🥷 Ninja</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Style</label>
+        <div class="btn-row" id="style-btns">
+          <button class="btn active" data-val="academic">Academic</button>
+          <button class="btn" data-val="professional">Professional</button>
+          <button class="btn" data-val="casual">Casual</button>
+          <button class="btn" data-val="creative">Creative</button>
+          <button class="btn" data-val="technical">Technical</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Tone</label>
+        <select id="tone-select">
+          <option value="conversational">💬 Conversational</option>
+          <option value="academic-formal">🎓 Academic Formal</option>
+          <option value="academic-casual">📚 Academic Casual</option>
+          <option value="journalistic">📰 Journalistic</option>
+          <option value="creative-writing">✍️ Creative</option>
+          <option value="professional">💼 Professional</option>
+          <option value="technical">⚙️ Technical</option>
+          <option value="persuasive">🎯 Persuasive</option>
+          <option value="storytelling">📖 Storytelling</option>
+          <option value="humorous">😂 Humorous</option>
+          <option value="emotional">❤️ Emotional</option>
+          <option value="analytical">🔬 Analytical</option>
+        </select>
+      </div>
+      <div class="control-group" style="max-width:200px">
+        <label>🎯 Target Score: <span id="target-display">80</span>%</label>
+        <input type="range" min="50" max="100" step="5" value="80" id="target-score" style="width:100%;accent-color:var(--accent)">
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div>
+        <div class="output-header"><label style="font-size:.8rem;color:var(--text3)">Input Text</label><span id="word-count" style="font-size:.7rem;color:var(--text4)">0 / 10,000 words</span></div>
+        <textarea id="input-text" placeholder="Paste your AI-generated text here..."></textarea>
+        <button class="btn-primary mt" id="humanize-btn" disabled>✨ Humanize Text</button>
+        <div class="progress" id="progress-wrap" style="display:none"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+      </div>
+      <div id="output-section" style="display:none">
+        <div class="output-header">
+          <label style="font-size:.8rem;color:var(--text3)">Humanized Output <span id="score-badge" class="badge badge-green"></span></label>
+          <div class="output-actions">
+            <button onclick="copyOutput()" title="Copy">📋</button>
+            <button onclick="downloadTxt()" title="Download TXT">📄</button>
+          </div>
+        </div>
+        <div class="output-box" id="output-text"></div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats-section" style="display:none">
+      <div class="stat"><div class="value" id="stat-input">0</div><div class="label">Input Words</div></div>
+      <div class="stat"><div class="value" id="stat-output">0</div><div class="label">Output Words</div></div>
+      <div class="stat"><div class="value" id="stat-model">-</div><div class="label">Model</div></div>
+      <div class="stat"><div class="value" id="stat-score">-</div><div class="label">Human Score</div></div>
+      <div class="stat"><div class="value" id="stat-passes">-</div><div class="label">Passes</div></div>
+    </div>
+  </div>
+
+  <!-- DETECTOR -->
+  <div class="section" id="sec-detector">
+    <h2>🔍 AI Text Detector</h2>
+    <p class="subtitle">Deep analysis — perplexity, burstiness, patterns, readability</p>
+    <textarea id="detect-input" placeholder="Paste text to analyze..." style="min-height:180px"></textarea>
+    <button class="btn-primary mt" id="detect-btn" disabled>🔍 Deep Scan</button>
+    <div id="detect-results" style="display:none;margin-top:1rem">
+      <div class="card" style="text-align:center">
+        <div class="score-big" id="detect-score">-</div>
+        <div class="score-label" id="detect-verdict">-</div>
+        <div class="score-bar"><div class="score-fill" id="detect-bar" style="width:0%"></div></div>
+      </div>
+      <div id="detect-sentences"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="section" id="sec-settings">
+    <h2>⚙️ API Key Settings</h2>
+    <p class="subtitle">Your keys stay in your browser only — never sent anywhere except the AI provider</p>
+    <div id="provider-list"></div>
+    <div class="card" id="selected-provider-config" style="display:none"></div>
+    <div class="card mt">
+      <h3 style="font-size:.9rem;color:var(--red);margin-bottom:.5rem">⚠️ Danger Zone</h3>
+      <button class="btn" style="background:rgba(239,68,68,.1);color:var(--red)" onclick="clearAllKeys()">Clear All API Keys</button>
+    </div>
+  </div>
+</main>
+
+<div class="footer">
+  <p>🥷 <strong>StealthHumanizer v2</strong> — Free & Open Source AI Text Humanizer</p>
+  <p class="mt">13 AI Providers • 4 Rewrite Levels • 13 Tones • Multi-Pass Humanization</p>
+  <p class="mt"><a href="https://github.com/rudra496/StealthHumanizer" target="_blank">GitHub Repository</a> • MIT License</p>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ==================== PROVIDERS ====================
+const PROVIDERS = [
+  { id:'gemini', name:'Google Gemini', free:true, url:'https://generativelanguage.googleapis.com/v1beta/models/', keyUrl:'https://aistudio.google.com/apikey', model:'gemini-1.5-flash', models:['gemini-1.5-flash','gemini-1.5-pro'], placeholder:'AIza...', type:'gemini' },
+  { id:'openai', name:'OpenAI GPT-4', free:false, url:'https://api.openai.com/v1/chat/completions', keyUrl:'https://platform.openai.com/api-keys', model:'gpt-4o', models:['gpt-4o','gpt-4o-mini'], placeholder:'sk-...', type:'openai' },
+  { id:'claude', name:'Anthropic Claude', free:false, url:'https://api.anthropic.com/v1/messages', keyUrl:'https://console.anthropic.com/', model:'claude-sonnet-4-20250514', models:['claude-sonnet-4-20250514','claude-3-haiku-20240307'], placeholder:'sk-ant-...', type:'claude' },
+  { id:'groq', name:'Groq (Llama 3.3)', free:true, url:'https://api.groq.com/openai/v1/chat/completions', keyUrl:'https://console.groq.com/keys', model:'llama-3.3-70b-versatile', models:['llama-3.3-70b-versatile','mixtral-8x7b-32768'], placeholder:'gsk_...', type:'openai' },
+  { id:'mistral', name:'Mistral AI', free:true, url:'https://api.mistral.ai/v1/chat/completions', keyUrl:'https://console.mistral.ai/', model:'mistral-large-latest', models:['mistral-large-latest','mistral-small'], placeholder:'...', type:'openai' },
+  { id:'cohere', name:'Cohere', free:true, url:'https://api.cohere.ai/v1/chat', keyUrl:'https://dashboard.cohere.com/api-keys', model:'command-r-plus', models:['command-r-plus','command-r'], placeholder:'...', type:'cohere' },
+  { id:'together', name:'Together AI', free:true, url:'https://api.together.xyz/v1/chat/completions', keyUrl:'https://api.together.xyz/settings/api-keys', model:'meta-llama/Llama-3-70b-chat-hf', models:['meta-llama/Llama-3-70b-chat-hf','mistralai/Mixtral-8x7B-Instruct-v0.1'], placeholder:'...', type:'openai' },
+  { id:'openrouter', name:'OpenRouter', free:true, url:'https://openrouter.ai/api/v1/chat/completions', keyUrl:'https://openrouter.ai/keys', model:'meta-llama/llama-3.1-70b-instruct', models:['meta-llama/llama-3.1-70b-instruct','google/gemini-flash-1.5'], placeholder:'sk-or-...', type:'openai' },
+  { id:'cerebras', name:'Cerebras', free:true, url:'https://api.cerebras.ai/v1/chat/completions', keyUrl:'https://cloud.cerebras.ai/', model:'llama3.1-70b', models:['llama3.1-70b'], placeholder:'...', type:'openai' },
+  { id:'deepinfra', name:'DeepInfra', free:true, url:'https://api.deepinfra.com/v1/openai/chat/completions', keyUrl:'https://deepinfra.com/dash/api_keys', model:'meta-llama/Meta-Llama-3-70B-Instruct', models:['meta-llama/Meta-Llama-3-70B-Instruct'], placeholder:'...', type:'openai' },
+  { id:'huggingface', name:'HuggingFace', free:true, url:'https://api-inference.huggingface.co/models/', keyUrl:'https://huggingface.co/settings/tokens', model:'meta-llama/Meta-Llama-3-8B-Instruct', models:['meta-llama/Meta-Llama-3-8B-Instruct'], placeholder:'hf_...', type:'huggingface' },
+  { id:'zai', name:'ZAI (GLM-5)', free:true, url:'https://api.z.ai/api/paas/v4/chat/completions', keyUrl:'https://z.ai/manage-apikey/apikey-list', model:'glm-5', models:['glm-5','glm-5-turbo'], placeholder:'...', type:'openai' },
+  { id:'cloudflare', name:'Cloudflare Workers AI', free:true, url:'', keyUrl:'https://dash.cloudflare.com/', model:'@cf/meta/llama-3-8b-instruct', models:['@cf/meta/llama-3-8b-instruct'], placeholder:'account_id:token', type:'cloudflare' },
+];
+
+// ==================== STATE ====================
+let keys = JSON.parse(localStorage.getItem('sh_keys') || '{}');
+let level = 'medium', style = 'academic', tone = 'conversational', targetScore = 80;
+let selectedProvider = null;
+
+// ==================== TONE/STYLE SYSTEM PROMPTS ====================
+const TONES = {
+  'conversational': 'Write like a smart friend explaining something over coffee. Use contractions constantly. Mix very short sentences with longer ones. Use informal transitions (anyway, so, basically, honestly). Add filler words naturally but sparingly. Start sentences with conjunctions. Sentence fragments are fine for emphasis.',
+  'academic-formal': 'Write in rigorous academic style. Use hedging language (may, might, could suggest). Reference ideas naturally. Vary between complex analytical and simple declarative sentences. Include occasional rhetorical questions. Spell out numbers under 10.',
+  'academic-casual': 'Write like an engaging academic who makes complex ideas accessible. Use clear explanations. Mix formal analysis with conversational asides. Ask questions to engage the reader. Occasionally use first person.',
+  'journalistic': 'Write like a direct, informative journalist. Use short punchy paragraphs. Lead with the most important information. Include specific details and numbers. Use attributed claims and direct quotes.',
+  'creative-writing': 'Write with vivid, engaging language. Use sensory details and metaphors. Vary sentence rhythm like music. Show rather than tell. Use unexpected word choices. Create moments of tension and release.',
+  'professional': 'Write clearly, directly, no fluff. Use active voice predominantly. Professional but warm. Short paragraphs with clear topic sentences. Use specific data points. Be concise.',
+  'technical': 'Write with precision. Every term must be correct. Use concrete examples. Define terms on first use. Balance accessibility with accuracy. Address the reader directly. Keep sentences focused.',
+  'persuasive': 'Write with confidence and conviction. Use strong claims with evidence. Address counterarguments. Include emotional appeals. End with clear calls to action.',
+  'storytelling': 'Write like a storyteller. Use anecdotes and narrative arc. Create vivid scenes. Include character perspective. Build suspense. Use dramatic reveals.',
+  'humorous': 'Write with wit and irreverence. Use irony and sarcasm. Include unexpected comparisons. Self-deprecating humor. Wordplay and puns where appropriate.',
+  'emotional': 'Write with empathy and passion. Use vivid imagery. Personal anecdotes. Sensory language. Emotional appeals that feel genuine.',
+  'analytical': 'Write with logic and precision. Structured argumentation. Evidence chains. Systematic breakdown. Comparative analysis. Data-driven reasoning.',
+};
+
+const LEVELS = {
+  light: `LIGHT rewrite. Add contractions. Replace "utilize"→"use", "facilitate"→"help", "implement"→"set up". Break sentences over 25 words. Fix stiff phrasing. Keep same structure.`,
+  medium: `MEDIUM rewrite. Restructure 30% of sentences. Vary lengths dramatically (3-5 words mixed with 20-30 words). Change passive to active in 40% of cases. Add 2-3 personal touches per paragraph. Replace ALL formal transitions. Add filler words sparingly. Start paragraphs differently.`,
+  aggressive: `AGGRESSIVE rewrite. Rewrite ENTIRE text as if a human wrote it from scratch. Adopt strong personal voice. Dramatically vary paragraph lengths. Use fragments, questions, exclamations. Add colloquialisms. Include natural tangents in parentheses. Use "I", "we", "you" liberally. Start paragraphs with conjunctions. Replace EVERY formal word.`,
+  ninja: `NINJA rewrite — MAXIMUM STEALTH. Apply ALL techniques:\n1. CONTROLLED IMPERFECTION: include subtle "mistakes" real humans make\n2. BURSTINESS: EXTREME sentence length variation (3→35→5→28 words)\n3. PERPLEXITY: unexpected but natural word choices, idiomatic expressions\n4. NEVER use: "Furthermore","Moreover","Additionally","In conclusion","It is important to note","delve","tapestry","realm","landscape"\n5. HUMAN VOICE: write as if explaining to a friend, include brief anecdotes, add opinions\n6. STRUCTURAL: completely reorganize paragraphs, use non-linear info, add transitions only humans use ("OK so","Anyway","Here's where it gets interesting")\n7. NEVER start two sentences the same way. NEVER end paragraphs with summary statements.\n8. Include at least one parenthetical aside per paragraph.`,
+};
+
+function buildPrompt() {
+  return `You are an expert text humanizer. Rewrite AI-generated text to sound naturally human while preserving EVERY piece of meaning.
+
+STYLE: ${TONES[tone] || TONES['conversational']}
+
+${LEVELS[level] || LEVELS['medium']}
+
+CRITICAL RULES:
+1. Every fact, data point, name, date, and idea MUST appear in output
+2. Do NOT add new information or remove key information
+3. Maintain the same topic, purpose, and audience
+4. Similar length to input (±20%)
+5. Return ONLY the rewritten text. No explanations or meta-commentary.`;
+}
+
+// ==================== API CALLS ====================
+async function callProvider(providerId, systemPrompt, userText) {
+  const p = PROVIDERS.find(x => x.id === providerId);
+  const key = keys[providerId];
+  if (!p || !key) throw new Error(`No API key for ${providerId}`);
+
+  if (p.type === 'gemini') {
+    const url = `${p.url}${p.model}:generateContent?key=${key}`;
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{parts:[{text:systemPrompt+'\n\n'+userText}]}],
+        generationConfig:{temperature:0.9,topK:40,topP:0.95,maxOutputTokens:8192} }) });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error?.message||`Gemini error ${r.status}`); }
+    const d = await r.json(); return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+  if (p.type === 'claude') {
+    const r = await fetch(p.url, { method:'POST', headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({ model:p.model, max_tokens:4096, system:systemPrompt, messages:[{role:'user',content:userText}] }) });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error?.message||`Claude error ${r.status}`); }
+    const d = await r.json(); const t = d.content?.find(b=>b.type==='text'); return t?.text || '';
+  }
+  if (p.type === 'cohere') {
+    const r = await fetch(p.url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+      body: JSON.stringify({ model:p.model, preamble:systemPrompt, message:userText, temperature:0.9, max_tokens:4096 }) });
+    if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.message||`Cohere error ${r.status}`); }
+    const d = await r.json(); return d.text || '';
+  }
+  if (p.type === 'cloudflare') {
+    const [acct, token] = [key.split(':')[0], key.split(':')[1]||key];
+    const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${acct}/ai/run/${p.model}`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body: JSON.stringify({ messages:[{role:'system',content:systemPrompt},{role:'user',content:userText}] }) });
+    if (!r.ok) throw new Error(`Cloudflare error ${r.status}`);
+    const d = await r.json(); return d.result?.response || '';
+  }
+  // OpenAI-compatible
+  const r = await fetch(p.url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`,
+    ...(p.id==='openrouter'?{'HTTP-Referer':'https://stealthhumanizer.app'}:{}) },
+    body: JSON.stringify({ model:p.model, messages:[{role:'system',content:systemPrompt},{role:'user',content:userText}], temperature:0.9, max_tokens:4096 }) });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error?.message||`API error ${r.status}`); }
+  const d = await r.json(); return d.choices?.[0]?.message?.content || '';
+}
+
+// ==================== DETECTOR ====================
+const AI_PHRASES = ['it is important to note','furthermore','moreover','additionally','in addition','it is crucial','it is essential','plays a crucial role','has the potential to','it is evident that','demonstrates the','illustrates the','highlights the','on the other hand','in terms of','when it comes to','as previously mentioned','it should be noted','needless to say','last but not least','first and foremost','at the end of the day','in today\'s world','in this day and age','in the modern era','delve into','tapestry of','navigating the landscape','multifaceted','robust','seamless','streamline','synergy','paradigm','paradigm shift','holistic','cutting-edge','state-of-the-art','groundbreaking','transformative','comprehensive','unprecedented','utilize','facilitate','optimize','leverage','foster','cultivate','empower'];
+const HUMAN_SIGNALS = ['basically','actually','literally','honestly','like','you know','I mean','kind of','sort of','pretty much','I think','I feel like','I guess','anyway','so yeah','weirdly','tbh','imo'];
+const HEDGING = ['it could be argued','one might consider','it is possible that','it would seem','this suggests that'];
+
+function splitSentences(t) {
+  return t.match(/[^.!?]+[.!?]+[\s]*/g)?.map(s=>s.trim()).filter(s=>s.length>0) || [t.trim()];
+}
+
+function detectScore(text) {
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) return { score:50, sentences:[], verdict:'mixed' };
+  const results = sentences.map(s => {
+    const lower = s.toLowerCase(); let sc = 65;
+    AI_PHRASES.forEach(p => { if (lower.includes(p)) sc -= 15; });
+    if (/\b(utilize|implement|facilitate|leverage|foster|cultivate|empower)\b/i.test(s)) sc -= 10;
+    if (/\b(is|are|was|were|been|being)\s+\w+ed\b/i.test(s)) sc -= 6;
+    HEDGING.forEach(h => { if (lower.includes(h)) sc -= 8; });
+    if (/^(\w+\s+){8,20}\w+[.!?]$/.test(s)) sc -= 12;
+    let hSig = 0; HUMAN_SIGNALS.forEach(h => { if (lower.includes(h)) hSig++; });
+    sc += hSig * 12;
+    if (/\w+'(?:t|s|re|ve|ll|d|m)\b/i.test(s)) sc += 8;
+    if (/\b(I|me|my|we|us|our)\b/i.test(s)) sc += 7;
+    if (/\byou\b/i.test(s)) sc += 5;
+    if (s.endsWith('?')) sc += 6;
+    if (s.endsWith('!')) sc += 4;
+    if (s.includes('—') || s.includes(' - ')) sc += 4;
+    if (/\([^)]+\)/.test(s)) sc += 5;
+    if (/^(and|but|so|because|also|plus|or|well|ok|hey)\b/i.test(s)) sc += 6;
+    sc = Math.max(0, Math.min(100, sc));
+    return { text:s, score:sc, cls: sc>=60?'human':sc>=40?'maybe':'ai' };
+  });
+  const avg = results.reduce((a,r)=>a+r.score,0)/results.length;
+  // Burstiness
+  const lens = sentences.map(s=>s.split(/\s+/).length);
+  const avgL = lens.reduce((a,b)=>a+b,0)/lens.length;
+  const variance = lens.reduce((s,l)=>s+Math.pow(l-avgL,2),0)/lens.length;
+  const burstiness = Math.min(100, (Math.sqrt(variance)/avgL)*250);
+  // Diversity
+  const words = text.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+  const diversity = words.length > 10 ? (new Set(words).size/words.length)*100 : 50;
+  const overall = avg*0.5 + burstiness*0.25 + diversity*0.25;
+  return { score: Math.round(overall), sentences: results, verdict: overall>=60?'human':overall>=40?'mixed':'ai' };
+}
+
+// ==================== MULTI-PASS HUMANIZER ====================
+async function humanize(text) {
+  const providerId = Object.keys(keys).find(k => keys[k]);
+  if (!providerId) { toast('Add an API key in Settings first!','error'); return; }
+  
+  const systemPrompt = buildPrompt();
+  const maxPasses = level==='ninja'?5:level==='aggressive'?3:1;
+  const chunks = [];
+  const words = text.split(/\s+/);
+  for (let i=0;i<words.length;i+=2500) chunks.push(words.slice(i,i+2500).join(' '));
+
+  setProgress(true, 0);
+  let result = '';
+  for (let i=0;i<chunks.length;i++) {
+    const r = await callProvider(providerId, systemPrompt, 'Text to humanize:\n\n'+chunks[i]);
+    result += (i>0?'\n\n':'') + r;
+    setProgress(true, Math.round((i+1)/chunks.length*100));
+  }
+
+  let passes = 1;
+  for (let pass=2;pass<=maxPasses;pass++) {
+    const det = detectScore(result);
+    if (det.score >= targetScore) break;
+    const flagged = det.sentences.filter(s=>s.cls!=='human').map(s=>s.text);
+    if (flagged.length===0) break;
+    try {
+      const rePrompt = systemPrompt + '\n\nCONTEXT: An AI detector flagged these sentences. Rewrite ONLY these to sound more human.\n\nFLAGGED:\n'+flagged.map((s,i)=>`${i+1}. ${s}`).join('\n')+'\n\nReturn ONLY the rewritten versions, numbered.';
+      const reResult = await callProvider(providerId, rePrompt, '');
+      const rehumanized = reResult.split('\n').map(l=>l.replace(/^\d+[\.\)]\s*/,'').trim()).filter(l=>l.length>10);
+      const allSents = splitSentences(result);
+      const flaggedSet = new Set(flagged);
+      let ri = 0;
+      result = allSents.map(s => { if (flaggedSet.has(s)&&ri<rehumanized.length) { ri++; return rehumanized[ri-1]; } return s; }).join(' ');
+      passes = pass;
+      setProgress(true, Math.round(pass/maxPasses*100));
+    } catch { break; }
+  }
+  setProgress(false);
+
+  const finalDet = detectScore(result);
+  const inputWords = text.split(/\s+/).length;
+  const outputWords = result.split(/\s+/).length;
+  const provider = PROVIDERS.find(p=>p.id===providerId);
+
+  document.getElementById('output-text').textContent = result;
+  document.getElementById('output-section').style.display = '';
+  document.getElementById('stats-section').style.display = '';
+  document.getElementById('stat-input').textContent = inputWords;
+  document.getElementById('stat-output').textContent = outputWords;
+  document.getElementById('stat-model').textContent = provider?.name||providerId;
+  document.getElementById('stat-model').style.fontSize = '.9rem';
+  const sc = finalDet.score;
+  document.getElementById('stat-score').textContent = sc+'%';
+  document.getElementById('stat-score').style.color = sc>=60?'var(--accent)':sc>=40?'var(--yellow)':'var(--red)';
+  document.getElementById('stat-passes').textContent = passes;
+  const badge = document.getElementById('score-badge');
+  badge.textContent = sc+'% Human ('+passes+' pass'+(passes>1?'es':'')+')';
+  badge.className = 'badge '+(sc>=60?'badge-green':sc>=40?'badge-yellow':'badge-red');
+  toast(`Done! ${provider?.name} — ${sc}% human in ${passes} pass${passes>1?'es':''}`,'success');
+}
+
+// ==================== UI ====================
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+type; el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(), 4000);
+}
+
+function setProgress(show, pct) {
+  document.getElementById('progress-wrap').style.display = show?'':'none';
+  if (show) document.getElementById('progress-bar').style.width = pct+'%';
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(document.getElementById('output-text').textContent);
+  toast('Copied!','success');
+}
+
+function downloadTxt() {
+  const blob = new Blob([document.getElementById('output-text').textContent],{type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='humanized.txt'; a.click();
+}
+
+function getAvailableProvider() {
+  const priority = ['gemini','groq','zai','openrouter','together','cerebras','mistral','cohere','deepinfra','huggingface','openai','claude'];
+  return priority.find(p=>keys[p]) || null;
+}
+
+// Tab switching
+document.getElementById('tabs').addEventListener('click', e => {
+  if (!e.target.classList.contains('tab')) return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+e.target.dataset.tab).classList.add('active');
+});
+
+// Button groups
+['level-btns','style-btns'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    const btn = e.target.closest('.btn'); if (!btn) return;
+    btn.parentElement.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if (id==='level-btns') level = btn.dataset.val;
+    if (id==='style-btns') style = btn.dataset.val;
+  });
+});
+
+document.getElementById('tone-select').addEventListener('change', e => tone = e.target.value);
+document.getElementById('target-score').addEventListener('input', e => {
+  targetScore = parseInt(e.target.value);
+  document.getElementById('target-display').textContent = targetScore;
+});
+
+const inputEl = document.getElementById('input-text');
+inputEl.addEventListener('input', () => {
+  const wc = inputEl.value.trim().split(/\s+/).filter(w=>w).length;
+  document.getElementById('word-count').textContent = `${wc} / 10,000 words`;
+  document.getElementById('humanize-btn').disabled = wc===0;
+});
+
+const detectInput = document.getElementById('detect-input');
+detectInput.addEventListener('input', () => {
+  document.getElementById('detect-btn').disabled = detectInput.value.trim().length===0;
+});
+
+document.getElementById('humanize-btn').addEventListener('click', async () => {
+  if (!inputEl.value.trim()) return;
+  document.getElementById('humanize-btn').disabled = true;
+  try { await humanize(inputEl.value); } catch(err) { toast(err.message,'error'); }
+  document.getElementById('humanize-btn').disabled = false;
+});
+
+document.getElementById('detect-btn').addEventListener('click', () => {
+  if (!detectInput.value.trim()) return;
+  const det = detectScore(detectInput.value);
+  document.getElementById('detect-results').style.display = '';
+  document.getElementById('detect-score').textContent = det.score+'%';
+  document.getElementById('detect-score').style.color = det.score>=60?'var(--accent)':det.score>=40?'var(--yellow)':'var(--red)';
+  document.getElementById('detect-verdict').textContent = det.verdict==='human'?'✅ Likely Human Written':det.verdict==='ai'?'❌ Likely AI Generated':'⚠️ Mixed — Uncertain';
+  document.getElementById('detect-verdict').style.color = det.score>=60?'var(--accent)':det.score>=40?'var(--yellow)':'var(--red)';
+  document.getElementById('detect-bar').style.width = det.score+'%';
+  document.getElementById('detect-bar').style.background = det.score>=60?'var(--accent)':det.score>=40?'var(--yellow)':'var(--red)';
+  document.getElementById('detect-sentences').innerHTML = det.sentences.map(s => 
+    `<div class="sentence sentence-${s.cls}">${s.text} <span class="score" style="color:${s.cls==='human'?'var(--accent)':s.cls==='maybe'?'var(--yellow)':'var(--red)'}">${s.score}%</span></div>`
+  ).join('');
+  toast(`Analysis: ${det.score}% human`,'info');
+});
+
+// ==================== SETTINGS UI ====================
+function renderProviders() {
+  const list = document.getElementById('provider-list');
+  const avail = getAvailableProvider();
+  list.innerHTML = '<h3 style="font-size:1rem;margin-bottom:.75rem">🆓 Free Providers</h3>' +
+    PROVIDERS.filter(p=>p.free).map(p => 
+      `<div class="provider-card ${selectedProvider===p.id?'selected':''}" onclick="selectProvider('${p.id}')">
+        <h4>${p.name} ${keys[p.id]?'✅':''} ${p.free?'<span class="free">FREE</span>':''}</h4>
+        <p>${p.description}</p>
+      </div>`
+    ).join('') +
+    '<h3 style="font-size:1rem;margin:.75rem 0">Paid Providers</h3>' +
+    PROVIDERS.filter(p=>!p.free).map(p => 
+      `<div class="provider-card ${selectedProvider===p.id?'selected':''}" onclick="selectProvider('${p.id}')">
+        <h4>${p.name} ${keys[p.id]?'✅':''}</h4>
+        <p>${p.description}</p>
+      </div>`
+    ).join('');
+}
+
+function selectProvider(id) {
+  selectedProvider = id;
+  renderProviders();
+  const p = PROVIDERS.find(x=>x.id===id);
+  const cfg = document.getElementById('selected-provider-config');
+  cfg.style.display = '';
+  cfg.innerHTML = `
+    <h3>${p.name} ${p.free?'<span class="badge badge-green">FREE</span>':''}</h3>
+    <p style="font-size:.85rem;color:var(--text4);margin:.5rem 0">${p.description}</p>
+    <div class="key-input">
+      <input type="password" id="key-input" placeholder="${p.placeholder}" value="${keys[p.id]||''}">
+      <button onclick="saveKey('${p.id}')">Save</button>
+    </div>
+    <div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap">
+      <a href="${p.keyUrl}" target="_blank" style="color:var(--accent);font-size:.85rem">🔑 Get API Key</a>
+      ${p.id==='gemini'?'<span style="color:var(--text4);font-size:.8rem">1. Go to link → 2. Sign in with Google → 3. Create API Key → 4. Paste above</span>':''}
+      ${p.id==='zai'?'<span style="color:var(--text4);font-size:.8rem">Zhipu AI GLM-5 — powerful OpenAI-compatible API</span>':''}
+      ${p.id==='groq'?'<span style="color:var(--text4);font-size:.8rem">Ultra-fast inference with Llama 3.3 70B</span>':''}
+    </div>
+  `;
+}
+
+function saveKey(id) {
+  const val = document.getElementById('key-input').value.trim();
+  if (val) keys[id] = val; else delete keys[id];
+  localStorage.setItem('sh_keys', JSON.stringify(keys));
+  renderProviders();
+  selectProvider(id);
+  toast(`${PROVIDERS.find(p=>p.id===id)?.name} key saved!`,'success');
+}
+
+function clearAllKeys() {
+  keys = {}; localStorage.removeItem('sh_keys');
+  selectedProvider = null;
+  renderProviders();
+  document.getElementById('selected-provider-config').style.display = 'none';
+  toast('All keys cleared','info');
+}
+
+// Init
+renderProviders();
+if (!getAvailableProvider()) {
+  toast('⚠️ No API key set — go to Settings to add one (Gemini is free!)','info');
+}
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ export type ModelProvider =
   | 'gemini' | 'openai' | 'claude' 
   | 'groq' | 'mistral' | 'cohere' 
   | 'together' | 'openrouter' | 'cerebras'
-  | 'deepinfra' | 'huggingface' | 'cloudflare';
+  | 'deepinfra' | 'huggingface' | 'cloudflare' | 'zai';
 
 export interface Provider {
   id: ModelProvider;

@@ -144,6 +144,18 @@ export const PROVIDERS: Provider[] = [
     placeholder: '...',
   },
   {
+    id: 'zai',
+    name: 'ZAI (GLM-5)',
+    description: 'Zhipu AI GLM-5 — powerful LLM with OpenAI-compatible API. Free tier available!',
+    free: true,
+    apiUrl: 'https://api.z.ai/api/paas/v4/chat/completions',
+    getApiKeyUrl: 'https://z.ai/manage-apikey/apikey-list',
+    docsUrl: 'https://docs.z.ai/api-reference/introduction',
+    defaultModel: 'glm-5',
+    models: ['glm-5', 'glm-5-turbo', 'glm-5-plus'],
+    placeholder: '...',
+  },
+  {
     id: 'huggingface',
     name: 'HuggingFace',
     description: 'Free inference API for open-source models. Rate limited.',
@@ -186,7 +198,7 @@ export function getProvider(id: ModelProvider): Provider | undefined {
 export function getAvailableProvider(keys: Record<string, string | undefined>): ModelProvider | null {
   // Priority order for free providers
   const priority: ModelProvider[] = [
-    'gemini', 'groq', 'openrouter', 'together', 'cerebras',
+    'gemini', 'groq', 'openrouter', 'together', 'cerebras', 'zai',
     'mistral', 'cohere', 'deepinfra', 'huggingface', 'cloudflare',
     'openai', 'claude'
   ];
@@ -454,13 +466,17 @@ export async function generateWithProvider(
       );
     
     case 'cloudflare':
-      // Cloudflare requires account_id in URL - user needs to configure this
-      // For now, use a placeholder that the user can customize
-      const accountId = apiKey.split(':')[0]; // Format: account_id:api_token
+      const accountId = apiKey.split(':')[0];
       const apiToken = apiKey.split(':')[1] || apiKey;
       return openAICompatibleGenerate(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
         apiToken, systemPrompt, fullUserPrompt, model, options
+      );
+    
+    case 'zai':
+      return openAICompatibleGenerate(
+        'https://api.z.ai/api/paas/v4/chat/completions',
+        apiKey, systemPrompt, fullUserPrompt, model, options
       );
     
     default:
