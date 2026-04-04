@@ -24,7 +24,7 @@ export interface Provider {
 // ==================== HUMANIZATION TYPES ====================
 
 export type RewriteLevel = 'light' | 'medium' | 'aggressive' | 'ninja';
-export type StylePreset = 'academic' | 'casual' | 'professional' | 'creative' | 'technical';
+export type StylePreset = 'humanize' | 'academic' | 'casual' | 'professional' | 'creative' | 'technical';
 
 export type TonePreset = 
   | 'academic-formal' | 'academic-casual'

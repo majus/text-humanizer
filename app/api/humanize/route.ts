@@ -30,6 +30,55 @@ function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]+[\s]*/g)?.map(s => s.trim()).filter(s => s.length > 0) || [text.trim()];
 }
 
+// LLM-based evaluation of humanization quality
+async function llmEvaluateHumanScore(
+  provider: ModelProvider,
+  apiKey: string,
+  text: string
+): Promise<{ score: number; flaggedSentences: string[] }> {
+  try {
+    const prompt = `You are an expert AI text detector. Analyze the following text and estimate how likely it was written by a human (vs AI-generated).
+
+Consider:
+- Sentence length variation (humans vary lengths more)
+- Vocabulary diversity and unexpected word choices
+- Presence of contractions, informal language, personal opinions
+- Absence of AI-typical phrases ("furthermore", "it is important to note", "delve into", "in today's world")
+- Natural flow vs mechanical structure
+- Use of first person, rhetorical questions, parenthetical asides
+
+TEXT TO ANALYZE:
+"""
+${text.slice(0, 3000)}
+"""
+
+Respond in EXACTLY this JSON format (no other text):
+{"score": <number 0-100>, "flaggedSentences": ["sentence1", "sentence2"]}
+
+Where score is the estimated human-written percentage (100 = definitely human, 0 = definitely AI).
+flaggedSentences should list sentences that seem most AI-generated (max 5).`;
+
+    const result = await generateWithProvider(provider, apiKey, prompt, '', { temperature: 0.3, maxTokens: 512 });
+    
+    // Parse JSON from response
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
+        flaggedSentences: Array.isArray(parsed.flaggedSentences) ? parsed.flaggedSentences : [],
+      };
+    }
+  } catch {}
+  
+  // Fallback to local heuristic
+  const detection = detectAI(text);
+  return {
+    score: detection.score,
+    flaggedSentences: detection.sentences.filter(s => s.classification !== 'human').map(s => s.text),
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { text, level, style, tone, customTone, model, apiKey, targetScore, language } = await request.json();
@@ -39,7 +88,9 @@ export async function POST(request: NextRequest) {
     const systemPrompt = getSystemPrompt(level, style, tone, customTone);
     const providerInfo = getProvider(model);
     const modelId = providerInfo?.defaultModel || model;
-    const maxPasses = level === 'ninja' ? 5 : level === 'aggressive' ? 3 : 1;
+    
+    // Light/medium: single pass only. Aggressive: 2 passes max. Ninja: 2 passes max with LLM eval.
+    const maxPasses = level === 'ninja' ? 2 : level === 'aggressive' ? 2 : 1;
     const target = targetScore || 80;
     const chunks = chunkText(text, 2500);
 
@@ -48,7 +99,7 @@ export async function POST(request: NextRequest) {
       langNote = '\n\nIMPORTANT: The text is in a language other than English. Rewrite it in the SAME language. Do NOT translate.';
     }
 
-    // Pass 1
+    // Pass 1: Full humanization
     let humanizedText = '';
     for (let i = 0; i < chunks.length; i++) {
       const result = await generateWithProvider(model, apiKey, systemPrompt, `Text to humanize:\n\n${chunks[i]}${langNote}`, { model: modelId });
@@ -58,12 +109,13 @@ export async function POST(request: NextRequest) {
     let passes = 1;
     let currentText = humanizedText;
 
-    // Multi-pass
+    // Multi-pass: only for aggressive/ninja, using LLM self-evaluation
     for (let pass = 2; pass <= maxPasses; pass++) {
-      const detection = detectAI(currentText);
-      if (detection.score >= target) break;
+      const evalResult = await llmEvaluateHumanScore(model, apiKey, currentText);
+      
+      if (evalResult.score >= target) break;
 
-      const flagged = detection.sentences.filter(s => s.classification !== 'human').map(s => s.text);
+      const flagged = evalResult.flaggedSentences;
       if (flagged.length === 0) break;
 
       try {
@@ -71,7 +123,6 @@ export async function POST(request: NextRequest) {
         const result = await generateWithProvider(model, apiKey, rehumanizePrompt, '', { model: modelId, temperature: 1.0 });
         const rehumanized = result.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l => l.length > 10);
         
-        // Positional matching: replace flagged sentences by their position in the full text
         const origSentences = splitSentences(currentText);
         const flaggedIndices = new Set();
         origSentences.forEach((orig, i) => {

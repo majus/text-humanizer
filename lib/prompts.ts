@@ -92,6 +92,23 @@ export const TONE_CONFIGS: Record<TonePreset, {
 // ==================== STYLE PROMPTS ====================
 
 const STYLE_GUIDES: Record<StylePreset, string> = {
+  humanize: `HUMANIZE STYLE RULES — OPTIMIZED FOR BYPASSING AI DETECTION:
+- Your #1 priority is making text that reads as HUMAN-WRITTEN, not just "good writing"
+- Use contractions everywhere (don't, can't, it's, they're, wouldn't've, could've, should've, that's)
+- Start sentences with conjunctions (And, But, So, Because, Also, Plus, Or, Well)
+- Dramatically vary sentence length: 3-word fragments, 25-word flowing sentences, 8-word punchy ones
+- Add natural imperfections: slightly informal word in a formal context, a sentence that trails off with "..."
+- Include personal asides in parentheses (like this) or em-dashes—like this
+- Use "I", "we", "you" naturally throughout
+- Avoid ALL AI-typical phrases: "furthermore", "moreover", "additionally", "in conclusion", "it is important to note", "delve into", "tapestry", "in today's world", "landscape", "realm"
+- Never start two consecutive sentences the same way
+- End some paragraphs with a question or an unexpected thought (never with a summary)
+- Include at least one rhetorical question per section
+- Use filler words sparingly but naturally (basically, honestly, kind of, pretty much, you know)
+- Mix formal and informal elements — humans don't write in one consistent register
+- Add occasional humor, irony, or personality
+- Break rules intentionally for effect: one-word paragraphs, sentence fragments, dramatic pauses`,
+
   academic: `ACADEMIC STYLE RULES:
 - Maintain scholarly rigor while sounding natural
 - Use field-specific terminology naturally, not as decoration
@@ -348,3 +365,18 @@ export const SAMPLE_TECHNICAL_TEXT = `The implementation of microservices archit
 Containerization technologies, particularly Docker and Kubernetes, have emerged as essential tools for managing microservices deployments. These technologies provide consistent runtime environments and enable efficient resource utilization across distributed systems.
 
 Furthermore, the adoption of API gateway patterns has streamlined inter-service communication and provided centralized control over authentication, rate limiting, and request routing.`;
+
+export const GRAMMAR_CHECK_SYSTEM_PROMPT = `You are an expert grammar checker and proofreader. Analyze the following text for:
+- Grammar errors
+- Spelling mistakes  
+- Punctuation issues
+- Awkward phrasing
+- Subject-verb agreement
+- Tense consistency
+- Run-on sentences or fragments
+
+Respond in EXACTLY this JSON format:
+{"issues": [{"type": "grammar|spelling|punctuation|phrasing", "original": "the incorrect text", "suggestion": "the correction", "explanation": "brief reason"}], "correctedText": "the full corrected text"}
+
+If no issues found, return: {"issues": [], "correctedText": "original text unchanged"}
+Return ONLY valid JSON, no other text.`;
