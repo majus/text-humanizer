@@ -25,6 +25,8 @@ Transform AI-generated text into **natural, human-like writing** using 13 AI pro
 
 > 💡 **Try it now:** [**Live Demo on GitHub Pages**](https://rudra496.github.io/StealthHumanizer/) — no installation needed!
 
+![StealthHumanizer Demo](https://img.shields.io/badge/🎬_Demo_Screenshot-Coming_Soon-8b5cf6?style=for-the-badge)
+
 ### How It Works
 
 ```
@@ -267,6 +269,18 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 This project is licensed under the **MIT License** — use it however you want.
 
 See [LICENSE](LICENSE) for details.
+
+---
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#rudra496/StealthHumanizer&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=rudra496/StealthHumanizer&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=rudra496/StealthHumanizer&type=Date" />
+   <img alt="Star History" src="https://api.star-history.com/svg?repos=rudra496/StealthHumanizer&type=Date" />
+ </picture>
+</a>
 
 ---
 
