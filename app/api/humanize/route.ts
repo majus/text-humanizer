@@ -3,6 +3,8 @@ import { RewriteLevel, StylePreset, TonePreset, ModelProvider } from '@/lib/type
 import { getSystemPrompt, getRehumanizePrompt, getSelfCheckPrompt, getFixPrompt, LEVEL_PARAMS } from '@/lib/prompts';
 import { generateWithProvider, getProvider } from '@/lib/providers';
 import { detectAI } from '@/lib/detector';
+import { postprocess } from '@/lib/postprocess';
+import { chainModels } from '@/lib/chain';
 
 function countWords(text: string): number { return text.trim().split(/\s+/).filter(w => w.length > 0).length; }
 
@@ -30,7 +32,6 @@ function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]+[\s]*/g)?.map(s => s.trim()).filter(s => s.length > 0) || [text.trim()];
 }
 
-// LLM-based self-check: "Does this sound like AI?"
 async function llmSelfCheck(
   provider: ModelProvider,
   apiKey: string,
@@ -61,7 +62,15 @@ async function llmSelfCheck(
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, level, style, tone, customTone, model, apiKey, targetScore, language, writingSample } = await request.json();
+    const {
+      text, level, style, tone, customTone, model, apiKey,
+      targetScore, language, writingSample,
+      // New pipeline parameters
+      postprocess: enablePostprocess = true,
+      chainModels: chainModelIds = [],
+      apiKeys: extraApiKeys = {},
+    } = await request.json();
+
     if (!text || !model || !apiKey) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (countWords(text) > 10000) return NextResponse.json({ error: 'Exceeds 10,000 word limit' }, { status: 400 });
 
@@ -70,7 +79,6 @@ export async function POST(request: NextRequest) {
     const providerInfo = getProvider(model);
     const modelId = providerInfo?.defaultModel || model;
 
-    // Ninja: 3 passes. Aggressive: 2 passes. Medium: 2 passes. Light: 1 pass.
     const maxPasses = level === 'ninja' ? 3 : level === 'aggressive' ? 2 : level === 'medium' ? 2 : 1;
     const target = targetScore || 80;
     const chunks = chunkText(text, 2500);
@@ -80,7 +88,7 @@ export async function POST(request: NextRequest) {
       langNote = '\n\nIMPORTANT: The text is in a language other than English. Rewrite it in the SAME language. Do NOT translate.';
     }
 
-    // Pass 1: Full humanization with level-appropriate temperature
+    // ==================== LAYER 1: LLM Rewrite ====================
     let humanizedText = '';
     for (let i = 0; i < chunks.length; i++) {
       const result = await generateWithProvider(model, apiKey, systemPrompt, chunks[i], {
@@ -94,26 +102,68 @@ export async function POST(request: NextRequest) {
     let passes = 1;
     let currentText = humanizedText;
 
-    // Multi-pass with self-check loop
-    for (let pass = 2; pass <= maxPasses; pass++) {
-      const check = await llmSelfCheck(model, apiKey, currentText);
+    // ==================== LAYER 2: Post-Processing ====================
+    if (enablePostprocess) {
+      currentText = postprocess(currentText);
+    }
 
-      if (check.score >= target) break;
+    // ==================== LAYER 3: Multi-Model Chain ====================
+    if (chainModelIds && chainModelIds.length > 0) {
+      // Build chain config from provided model IDs and API keys
+      const allApiKeys = { ...extraApiKeys, [model]: apiKey };
+      const chainConfig = chainModelIds
+        .filter((id: string) => allApiKeys[id])
+        .map((id: string) => ({
+          provider: id as ModelProvider,
+          apiKey: allApiKeys[id],
+        }));
 
-      const allIssues = [...check.issues, ...check.flaggedSentences];
-      if (allIssues.length === 0) break;
-
-      try {
-        const fixPrompt = getFixPrompt(allIssues);
-        const fullFixPrompt = `${fixPrompt}\n\nORIGINAL TEXT TO FIX (rewrite the entire text with these fixes applied):\n\n${currentText}`;
-        const result = await generateWithProvider(model, apiKey, fixPrompt, currentText, {
-          model: modelId,
-          temperature: params.temperature,
-          topP: params.topP,
+      if (chainConfig.length > 0) {
+        const chainResult = await chainModels({
+          text: currentText,
+          chainModels: chainConfig,
+          level: level as RewriteLevel,
+          style: style as StylePreset,
+          tone,
+          customTone,
         });
-        currentText = result;
-        passes = pass;
-      } catch { break; }
+        currentText = chainResult.text;
+        passes += chainResult.passes.length;
+      }
+    }
+
+    // ==================== LAYER 4: Final Polish ====================
+    if (enablePostprocess) {
+      // Light post-process pass after chain
+      currentText = postprocess(currentText, { light: true });
+    }
+
+    // Multi-pass self-check loop (only if not chaining, to save time)
+    if (chainModelIds.length === 0) {
+      for (let pass = 2; pass <= maxPasses; pass++) {
+        const check = await llmSelfCheck(model, apiKey, currentText);
+        if (check.score >= target) break;
+
+        const allIssues = [...check.issues, ...check.flaggedSentences];
+        if (allIssues.length === 0) break;
+
+        try {
+          const fixPrompt = getFixPrompt(allIssues);
+          const fullFixPrompt = `${fixPrompt}\n\nORIGINAL TEXT TO FIX (rewrite the entire text with these fixes applied):\n\n${currentText}`;
+          const result = await generateWithProvider(model, apiKey, fixPrompt, currentText, {
+            model: modelId,
+            temperature: params.temperature,
+            topP: params.topP,
+          });
+          currentText = result;
+          passes = pass;
+
+          // Apply light post-processing after each self-check fix
+          if (enablePostprocess) {
+            currentText = postprocess(currentText, { light: true });
+          }
+        } catch { break; }
+      }
     }
 
     const finalText = currentText;

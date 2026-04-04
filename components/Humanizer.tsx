@@ -7,11 +7,12 @@ import {
   Type, Languages, Upload, RotateCcw, CheckCircle, AlertTriangle,
   X, FileUp
 } from 'lucide-react';
-import { RewriteLevel, StylePreset, TonePreset, HumanizationResult } from '@/lib/types';
+import { RewriteLevel, StylePreset, TonePreset, HumanizationResult, ModelProvider } from '@/lib/types';
 import { TONE_CONFIGS, SAMPLE_AI_TEXT, SAMPLE_TECHNICAL_TEXT } from '@/lib/prompts';
 import { detectAI, getScoreColor, getScoreBarColor } from '@/lib/detector';
 import { getReadabilityLabel } from '@/lib/readability';
 import { countWords, downloadAsTxt, downloadAsDocx } from '@/lib/storage';
+import { PROVIDERS } from '@/lib/providers';
 
 const REWRITE_LEVELS: { id: RewriteLevel; name: string; desc: string }[] = [
   { id: 'light', name: '🪶 Light', desc: 'Subtle fixes' },
@@ -107,6 +108,12 @@ export default function Humanizer({ showToast }: HumanizerProps) {
   const [rehumanizing, setRehumanizing] = useState(false);
   const [writingSample, setWritingSample] = useState('');
 
+  // Pipeline options
+  const [enablePostprocess, setEnablePostprocess] = useState(true);
+  const [enableChain, setEnableChain] = useState(false);
+  const [selectedChainModels, setSelectedChainModels] = useState<string[]>([]);
+  const [pipelineStep, setPipelineStep] = useState('');
+
   const wordCount = countWords(inputText);
 
   useEffect(() => {
@@ -145,17 +152,29 @@ export default function Humanizer({ showToast }: HumanizerProps) {
     setResult(null);
     setGrammarIssues([]);
     setCorrectedText('');
-    setProgress({ pass: 0, max: level === 'ninja' ? 2 : level === 'aggressive' ? 2 : 1, message: 'Starting...' });
+    setPipelineStep('Step 1: LLM Rewrite...');
+    setProgress({ pass: 0, max: level === 'ninja' ? 3 : level === 'aggressive' ? 3 : 2, message: 'Layer 1: LLM Rewrite...' });
 
     try {
+      // Get all available API keys
+      let allApiKeys: Record<string, string | undefined> = {};
+      try { const s = localStorage.getItem('stealthhumanizer_api_keys'); if (s) allApiKeys = JSON.parse(s); } catch {}
+
       const response = await fetch('/api/humanize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText, level, style, tone, customTone, model: providerId, apiKey, targetScore, language, writingSample }),
+        body: JSON.stringify({
+          text: inputText, level, style, tone, customTone,
+          model: providerId, apiKey, targetScore, language, writingSample,
+          postprocess: enablePostprocess,
+          chainModels: enableChain ? selectedChainModels : [],
+          apiKeys: allApiKeys,
+        }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Failed'); }
       const data = await response.json();
       setResult(data);
+      setPipelineStep('');
       setProgress({ pass: 1, max: 1, message: 'Done!' });
 
       const scoreMsg = data.finalScore >= 70 ? `🎉 ${data.finalScore}% human!` : `Score: ${data.finalScore}% human`;
@@ -450,6 +469,110 @@ export default function Humanizer({ showToast }: HumanizerProps) {
                   className="w-full h-24 p-3 bg-dark-800 border border-dark-700/50 rounded-lg text-white placeholder-dark-500 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent-500/50" />
                 <p className="text-xs text-dark-500 mt-1">When provided, the humanized output will match your personal writing style</p>
               </div>
+
+              {/* Pipeline Controls */}
+              <div className="border-t border-dark-700/30 pt-4 space-y-4">
+                <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-accent-400" /> Pipeline Engine
+                </h4>
+
+                {/* Post-Processing Toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-dark-200">Non-LLM Post-Processing</p>
+                    <p className="text-xs text-dark-500">Synonym swaps, collocation replacements, sentence manipulation</p>
+                  </div>
+                  <button
+                    onClick={() => setEnablePostprocess(!enablePostprocess)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${enablePostprocess ? 'bg-accent-500' : 'bg-dark-600'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${enablePostprocess ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Multi-Model Chain Toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-dark-200">Multi-Model Chain</p>
+                    <p className="text-xs text-dark-500">Pass text through multiple AI models to mix fingerprints</p>
+                  </div>
+                  <button
+                    onClick={() => setEnableChain(!enableChain)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${enableChain ? 'bg-accent-500' : 'bg-dark-600'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${enableChain ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Chain Model Selection */}
+                {enableChain && (
+                  <div className="space-y-2 animate-fade-in">
+                    <p className="text-xs text-dark-400">Select models to chain through (requires API keys in Settings):</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {PROVIDERS.filter(p => p.free || ['openai', 'claude'].includes(p.id)).map(p => (
+                        <label key={p.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs ${
+                          selectedChainModels.includes(p.id)
+                            ? 'bg-accent-500/20 border border-accent-500/50 text-accent-300'
+                            : 'bg-dark-700/30 border border-dark-700/30 text-dark-400 hover:text-dark-200'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={selectedChainModels.includes(p.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSelectedChainModels(prev => [...prev, p.id]);
+                              } else {
+                                setSelectedChainModels(prev => prev.filter(id => id !== p.id));
+                              }
+                            }}
+                            className="accent-accent-500"
+                          />
+                          <span className="truncate">{p.name}</span>
+                          {p.free && <span className="text-green-400 text-[10px]">FREE</span>}
+                        </label>
+                      ))}
+                    </div>
+                    {selectedChainModels.length > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-dark-400">
+                        <span>Pipeline: LLM Rewrite → Post-Process →</span>
+                        {selectedChainModels.map((id, i) => {
+                          const p = PROVIDERS.find(pr => pr.id === id);
+                          return (
+                            <span key={id}>
+                              {i > 0 ? ' → ' : ''}{p?.name || id}
+                            </span>
+                          );
+                        })}
+                        <span>→ Polish</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Pipeline Visual */}
+                {(enablePostprocess || enableChain) && (
+                  <div className="bg-dark-700/20 rounded-lg p-3">
+                    <p className="text-xs text-dark-400 mb-2">Active Pipeline:</p>
+                    <div className="flex items-center gap-1 flex-wrap text-xs">
+                      <span className="px-2 py-1 rounded bg-accent-500/20 text-accent-300">① LLM Rewrite</span>
+                      <span className="text-dark-600">→</span>
+                      {enablePostprocess && (
+                        <>
+                          <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-300">② Post-Process</span>
+                          <span className="text-dark-600">→</span>
+                        </>
+                      )}
+                      {enableChain && selectedChainModels.map((id, i) => (
+                        <span key={id}>
+                          <span className="px-2 py-1 rounded bg-purple-500/20 text-purple-300">③{i > 0 ? '+' + (i+1) : ''} Chain: {PROVIDERS.find(p => p.id === id)?.name}</span>
+                          <span className="text-dark-600">→</span>
+                        </span>
+                      ))}
+                      <span className="px-2 py-1 rounded bg-green-500/20 text-green-300">④ Polish</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -495,7 +618,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
             <button onClick={handleHumanize} disabled={loading || !inputText.trim()}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-medium transition-all shadow-lg shadow-accent-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
-                <><RefreshCw className="w-5 h-5 animate-spin" /> {progress.message} (Pass {progress.pass}/{progress.max})</>
+                <><RefreshCw className="w-5 h-5 animate-spin" /> {pipelineStep || `${progress.message} (Pass ${progress.pass}/${progress.max})`}</>
               ) : (
                 <><Sparkles className="w-5 h-5" /> Humanize Text</>
               )}
