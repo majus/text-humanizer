@@ -90,7 +90,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
   const [expandedSentence, setExpandedSentence] = useState<number | null>(null);
   const [alternatives, setAlternatives] = useState<Record<number, string[]>>({});
   const [showComparison, setShowComparison] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
   const [showReadability, setShowReadability] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
