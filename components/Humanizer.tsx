@@ -105,6 +105,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
 
   // Re-humanize
   const [rehumanizing, setRehumanizing] = useState(false);
+  const [writingSample, setWritingSample] = useState('');
 
   const wordCount = countWords(inputText);
 
@@ -150,7 +151,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
       const response = await fetch('/api/humanize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText, level, style, tone, customTone, model: providerId, apiKey, targetScore, language }),
+        body: JSON.stringify({ text: inputText, level, style, tone, customTone, model: providerId, apiKey, targetScore, language, writingSample }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Failed'); }
       const data = await response.json();
@@ -420,23 +421,34 @@ export default function Humanizer({ showToast }: HumanizerProps) {
             Advanced Options
           </button>
           {showAdvanced && (
-            <div className="mt-3 grid md:grid-cols-2 gap-4 animate-fade-in">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
-                  <Target className="w-4 h-4 text-accent-400" /> Target Human Score: {targetScore}%
-                </label>
-                <input type="range" min="50" max="100" step="5" value={targetScore} onChange={e => setTargetScore(Number(e.target.value))}
-                  className="w-full accent-accent-500" />
-                <div className="flex justify-between text-xs text-dark-500 mt-1"><span>50%</span><span>75%</span><span>100%</span></div>
+            <div className="mt-3 space-y-4 animate-fade-in">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
+                    <Target className="w-4 h-4 text-accent-400" /> Target Human Score: {targetScore}%
+                  </label>
+                  <input type="range" min="50" max="100" step="5" value={targetScore} onChange={e => setTargetScore(Number(e.target.value))}
+                    className="w-full accent-accent-500" />
+                  <div className="flex justify-between text-xs text-dark-500 mt-1"><span>50%</span><span>75%</span><span>100%</span></div>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
+                    <Languages className="w-4 h-4 text-accent-400" /> Language
+                  </label>
+                  <select value={language} onChange={e => setLanguage(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-800 border border-dark-700/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50">
+                    {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
-                  <Languages className="w-4 h-4 text-accent-400" /> Language
+                  <Type className="w-4 h-4 text-accent-400" /> Your Writing Sample (optional)
                 </label>
-                <select value={language} onChange={e => setLanguage(e.target.value)}
-                  className="w-full px-3 py-2 bg-dark-800 border border-dark-700/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50">
-                  {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
-                </select>
+                <textarea value={writingSample} onChange={e => setWritingSample(e.target.value)}
+                  placeholder="Paste a sample of your own writing here... The AI will match your personal writing style, vocabulary, and sentence patterns. This dramatically improves humanization."
+                  className="w-full h-24 p-3 bg-dark-800 border border-dark-700/50 rounded-lg text-white placeholder-dark-500 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-accent-500/50" />
+                <p className="text-xs text-dark-500 mt-1">When provided, the humanized output will match your personal writing style</p>
               </div>
             </div>
           )}

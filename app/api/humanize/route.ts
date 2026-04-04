@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RewriteLevel, StylePreset, TonePreset, ModelProvider } from '@/lib/types';
-import { getSystemPrompt, getRehumanizePrompt } from '@/lib/prompts';
+import { getSystemPrompt, getRehumanizePrompt, getSelfCheckPrompt, getFixPrompt, LEVEL_PARAMS } from '@/lib/prompts';
 import { generateWithProvider, getProvider } from '@/lib/providers';
 import { detectAI } from '@/lib/detector';
 
@@ -30,67 +30,48 @@ function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]+[\s]*/g)?.map(s => s.trim()).filter(s => s.length > 0) || [text.trim()];
 }
 
-// LLM-based evaluation of humanization quality
-async function llmEvaluateHumanScore(
+// LLM-based self-check: "Does this sound like AI?"
+async function llmSelfCheck(
   provider: ModelProvider,
   apiKey: string,
   text: string
-): Promise<{ score: number; flaggedSentences: string[] }> {
+): Promise<{ score: number; issues: string[]; flaggedSentences: string[] }> {
   try {
-    const prompt = `You are an expert AI text detector. Analyze the following text and estimate how likely it was written by a human (vs AI-generated).
+    const prompt = getSelfCheckPrompt().replace('{TEXT}', text.slice(0, 3000));
+    const providerInfo = getProvider(provider);
+    const result = await generateWithProvider(provider, apiKey, prompt, '', {
+      model: providerInfo?.defaultModel,
+      temperature: 0.3,
+      topP: 0.9,
+      maxTokens: 1024,
+    });
 
-Consider:
-- Sentence length variation (humans vary lengths more)
-- Vocabulary diversity and unexpected word choices
-- Presence of contractions, informal language, personal opinions
-- Absence of AI-typical phrases ("furthermore", "it is important to note", "delve into", "in today's world")
-- Natural flow vs mechanical structure
-- Use of first person, rhetorical questions, parenthetical asides
-
-TEXT TO ANALYZE:
-"""
-${text.slice(0, 3000)}
-"""
-
-Respond in EXACTLY this JSON format (no other text):
-{"score": <number 0-100>, "flaggedSentences": ["sentence1", "sentence2"]}
-
-Where score is the estimated human-written percentage (100 = definitely human, 0 = definitely AI).
-flaggedSentences should list sentences that seem most AI-generated (max 5).`;
-
-    const result = await generateWithProvider(provider, apiKey, prompt, '', { temperature: 0.3, maxTokens: 512 });
-    
-    // Parse JSON from response
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return {
         score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
+        issues: Array.isArray(parsed.issues) ? parsed.issues : [],
         flaggedSentences: Array.isArray(parsed.flaggedSentences) ? parsed.flaggedSentences : [],
       };
     }
   } catch {}
-  
-  // Fallback to local heuristic
-  const detection = detectAI(text);
-  return {
-    score: detection.score,
-    flaggedSentences: detection.sentences.filter(s => s.classification !== 'human').map(s => s.text),
-  };
+  return { score: 50, issues: [], flaggedSentences: [] };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, level, style, tone, customTone, model, apiKey, targetScore, language } = await request.json();
+    const { text, level, style, tone, customTone, model, apiKey, targetScore, language, writingSample } = await request.json();
     if (!text || !model || !apiKey) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (countWords(text) > 10000) return NextResponse.json({ error: 'Exceeds 10,000 word limit' }, { status: 400 });
 
-    const systemPrompt = getSystemPrompt(level, style, tone, customTone);
+    const params = LEVEL_PARAMS[level as RewriteLevel];
+    const systemPrompt = getSystemPrompt(level, style, tone, customTone, writingSample);
     const providerInfo = getProvider(model);
     const modelId = providerInfo?.defaultModel || model;
-    
-    // Light/medium: single pass only. Aggressive: 2 passes max. Ninja: 2 passes max with LLM eval.
-    const maxPasses = level === 'ninja' ? 2 : level === 'aggressive' ? 2 : 1;
+
+    // Ninja: 3 passes. Aggressive: 2 passes. Medium: 2 passes. Light: 1 pass.
+    const maxPasses = level === 'ninja' ? 3 : level === 'aggressive' ? 2 : level === 'medium' ? 2 : 1;
     const target = targetScore || 80;
     const chunks = chunkText(text, 2500);
 
@@ -99,46 +80,38 @@ export async function POST(request: NextRequest) {
       langNote = '\n\nIMPORTANT: The text is in a language other than English. Rewrite it in the SAME language. Do NOT translate.';
     }
 
-    // Pass 1: Full humanization
+    // Pass 1: Full humanization with level-appropriate temperature
     let humanizedText = '';
     for (let i = 0; i < chunks.length; i++) {
-      const result = await generateWithProvider(model, apiKey, systemPrompt, `Text to humanize:\n\n${chunks[i]}${langNote}`, { model: modelId });
+      const result = await generateWithProvider(model, apiKey, systemPrompt, chunks[i], {
+        model: modelId,
+        temperature: params.temperature,
+        topP: params.topP,
+      });
       humanizedText += (i > 0 ? '\n\n' : '') + result;
     }
 
     let passes = 1;
     let currentText = humanizedText;
 
-    // Multi-pass: only for aggressive/ninja, using LLM self-evaluation
+    // Multi-pass with self-check loop
     for (let pass = 2; pass <= maxPasses; pass++) {
-      const evalResult = await llmEvaluateHumanScore(model, apiKey, currentText);
-      
-      if (evalResult.score >= target) break;
+      const check = await llmSelfCheck(model, apiKey, currentText);
 
-      const flagged = evalResult.flaggedSentences;
-      if (flagged.length === 0) break;
+      if (check.score >= target) break;
+
+      const allIssues = [...check.issues, ...check.flaggedSentences];
+      if (allIssues.length === 0) break;
 
       try {
-        const rehumanizePrompt = getRehumanizePrompt(flagged, level, style, tone, customTone);
-        const result = await generateWithProvider(model, apiKey, rehumanizePrompt, '', { model: modelId, temperature: 1.0 });
-        const rehumanized = result.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(l => l.length > 10);
-        
-        const origSentences = splitSentences(currentText);
-        const flaggedIndices = new Set();
-        origSentences.forEach((orig, i) => {
-          if (flagged.includes(orig)) flaggedIndices.add(i);
+        const fixPrompt = getFixPrompt(allIssues);
+        const fullFixPrompt = `${fixPrompt}\n\nORIGINAL TEXT TO FIX (rewrite the entire text with these fixes applied):\n\n${currentText}`;
+        const result = await generateWithProvider(model, apiKey, fixPrompt, currentText, {
+          model: modelId,
+          temperature: params.temperature,
+          topP: params.topP,
         });
-        
-        let replacementIdx = 0;
-        const newSentences = origSentences.map((orig, i) => {
-          if (flaggedIndices.has(i) && replacementIdx < rehumanized.length) {
-            const replacement = rehumanized[replacementIdx];
-            replacementIdx++;
-            return replacement;
-          }
-          return orig;
-        });
-        currentText = newSentences.join(' ');
+        currentText = result;
         passes = pass;
       } catch { break; }
     }

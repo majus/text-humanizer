@@ -218,6 +218,7 @@ export function getProviderDisplayName(provider: ModelProvider): string {
 
 interface GenerationOptions {
   temperature?: number;
+  topP?: number;
   maxTokens?: number;
   model?: string;
 }
@@ -245,6 +246,7 @@ async function openAICompatibleGenerate(
         { role: 'user', content: userPrompt },
       ],
       temperature: options.temperature ?? 0.9,
+      top_p: options.topP ?? 0.95,
       max_tokens: options.maxTokens ?? 4096,
     }),
   });
@@ -278,7 +280,7 @@ async function geminiGenerate(
       generationConfig: {
         temperature: options.temperature ?? 0.9,
         topK: 40,
-        topP: 0.95,
+        topP: options.topP ?? 0.95,
         maxOutputTokens: options.maxTokens ?? 8192,
       },
     }),
@@ -312,6 +314,7 @@ async function cohereGenerate(
       preamble: systemPrompt,
       message: userPrompt,
       temperature: options.temperature ?? 0.9,
+      p: options.topP ?? 0.95,
       max_tokens: options.maxTokens ?? 4096,
     }),
   });
@@ -378,6 +381,8 @@ async function claudeGenerate(
     body: JSON.stringify({
       model,
       max_tokens: options.maxTokens ?? 4096,
+      temperature: options.temperature ?? 0.9,
+      top_p: options.topP ?? 0.95,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),

@@ -36,9 +36,9 @@ export default function Detector({ showToast }: DetectorProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Search className="w-6 h-6 text-accent-400" /> AI Text Detector
+            <Search className="w-6 h-6 text-accent-400" /> Pattern Analysis
           </h2>
-          <p className="text-dark-400 mt-1">Deep analysis — perplexity, burstiness, patterns, readability</p>
+          <p className="text-dark-400 mt-1">Local heuristic analysis — perplexity, burstiness, patterns, readability</p>
         </div>
         <button onClick={() => { setText(SAMPLE_AI_TEXT); showToast('info', 'Sample loaded!'); }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-dark-300 text-sm self-start">
@@ -72,7 +72,7 @@ export default function Detector({ showToast }: DetectorProps) {
               <div className="flex items-center justify-center gap-2">
                 {(() => { const Icon = verdictIcon; return <Icon className={`w-5 h-5 ${scoreColor}`} />; })()}
                 <span className={`text-lg font-medium ${scoreColor}`}>
-                  {result.overallVerdict === 'human' ? 'Likely Human Written' : result.overallVerdict === 'ai' ? 'Likely AI Generated' : 'Mixed — Uncertain'}
+                  {result.overallVerdict === 'human' ? 'Likely Human Patterns' : result.overallVerdict === 'ai' ? 'Likely AI Patterns' : 'Mixed — Uncertain'}
                 </span>
               </div>
             </div>
@@ -80,6 +80,16 @@ export default function Detector({ showToast }: DetectorProps) {
               <div className={`h-full rounded-full progress-bar ${getScoreBarColor(result.score)}`} style={{ width: `${result.score}%` }} />
             </div>
             <div className="flex justify-between mt-1 text-xs text-dark-500"><span>AI Generated</span><span>Human Written</span></div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+            <p className="text-sm text-yellow-300/80 text-center">
+              ⚠️ This is a <strong>local pattern analysis</strong>, not real AI detection. For accurate results, test your text on{' '}
+              <a href="https://gptzero.me" target="_blank" rel="noopener" className="underline hover:text-yellow-300">GPTZero</a>,{' '}
+              <a href="https://quillbot.com/ai-content-detector" target="_blank" rel="noopener" className="underline hover:text-yellow-300">QuillBot</a>, or{' '}
+              <a href="https://originality.ai" target="_blank" rel="noopener" className="underline hover:text-yellow-300">Originality.ai</a>.
+            </p>
           </div>
 
           {/* Detection Metrics */}
