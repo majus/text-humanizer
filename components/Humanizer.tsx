@@ -331,7 +331,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
   const flaggedCount = detection?.sentences.filter(s => s.classification !== 'human').length || 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in-up">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -476,7 +476,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
             )}
             <textarea value={inputText} onChange={e => setInputText(e.target.value)}
               placeholder="Paste your AI-generated text here... or drag & drop a .txt/.docx/.pdf file"
-              className="w-full h-64 p-4 bg-dark-800/50 border border-dark-700/50 rounded-xl text-white placeholder-dark-500 resize-none focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-all text-sm leading-relaxed" />
+              className="w-full h-64 p-4 glass-card rounded-xl text-white placeholder-dark-500 resize-none focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-all text-sm leading-relaxed" />
           </div>
 
           <div className="mt-3">
@@ -528,7 +528,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
                 </button>
               </div>
             </div>
-            <div className="w-full h-64 p-4 bg-dark-800/50 border border-dark-700/50 rounded-xl text-white overflow-y-auto">
+            <div className="w-full h-64 p-4 glass-card rounded-xl text-white overflow-y-auto">
               {showComparison ? (
                 <div className="space-y-3">
                   {result.sentences.filter(s => s.original).map((s, i) => {
@@ -655,23 +655,23 @@ export default function Humanizer({ showToast }: HumanizerProps) {
       {/* Stats */}
       {result && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-slide-up">
-          <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-3 text-center">
+          <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-xl font-bold text-accent-400">{result.wordCount.input}</p>
             <p className="text-xs text-dark-400">Input Words</p>
           </div>
-          <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-3 text-center">
+          <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-xl font-bold text-accent-400">{result.wordCount.output}</p>
             <p className="text-xs text-dark-400">Output Words</p>
           </div>
-          <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-3 text-center">
+          <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-sm font-bold text-accent-400">{result.modelName}</p>
             <p className="text-xs text-dark-400">Model</p>
           </div>
-          <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-3 text-center">
+          <div className="glass-card rounded-xl p-3 text-center">
             <p className={`text-xl font-bold ${detection ? getScoreColor(detection.score) : 'text-dark-400'}`}>~{detection?.score || 0}%</p>
             <p className="text-xs text-dark-400">Est. Human Score</p>
           </div>
-          <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-3 text-center">
+          <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-xl font-bold text-dark-200">{result.passes}</p>
             <p className="text-xs text-dark-400">Passes</p>
           </div>

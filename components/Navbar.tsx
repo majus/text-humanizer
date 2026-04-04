@@ -1,6 +1,6 @@
 'use client';
 
-import { PenTool, Search, History, Settings, Sun, Moon, Zap } from 'lucide-react';
+import { PenTool, Search, History, Settings, Sun, Moon } from 'lucide-react';
 import type { Tab } from '@/lib/types';
 
 interface NavbarProps {
@@ -19,16 +19,16 @@ const tabs: { id: Tab; label: string; icon: typeof PenTool }[] = [
 
 export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme }: NavbarProps) {
   return (
-    <nav className="sticky top-0 z-40 border-b border-dark-700/50 bg-dark-900/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-40 border-b border-dark-700/50 bg-gradient-to-r from-dark-950 via-dark-900 to-dark-950/80 backdrop-blur-xl shadow-lg shadow-black/10">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-lg shadow-accent-500/20">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-lg shadow-accent-500/20 text-lg">
+              🥷
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">
-                Stealth<span className="text-accent-400">Humanizer</span>
+                <span className="hero-gradient">Stealth</span><span className="text-white">Humanizer</span>
                 <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-full bg-accent-500/20 text-accent-400 align-middle">v2</span>
               </h1>
               <p className="text-xs text-dark-400">World-class AI text humanizer • 100% Free</p>
@@ -39,7 +39,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme }: 
               const Icon = tab.icon;
               return (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     activeTab === tab.id ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25' : 'text-dark-300 hover:text-white hover:bg-dark-700/50'
                   }`}>
                   <Icon className="w-4 h-4" />{tab.label}

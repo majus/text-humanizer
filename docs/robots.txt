@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://rudra496.github.io/StealthHumanizer/sitemap.xml
+
+Sitemap: https://stealthhumanizer.vercel.app/sitemap.xml
