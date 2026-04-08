@@ -216,7 +216,8 @@ StealthHumanizer/
 ├── docs/
 │   ├── index.html               # Standalone GitHub Pages version
 │   ├── sitemap.xml              # SEO sitemap
-│   └── robots.txt               # Crawler rules
+│   ├── robots.txt               # Crawler rules
+│   └── DATA_PIPELINE.md         # PR1 open-access ingestion + provenance
 ├── .github/
 │   ├── workflows/
 │   │   ├── pages.yml            # GitHub Pages auto-deploy
