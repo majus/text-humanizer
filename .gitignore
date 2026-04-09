@@ -40,3 +40,5 @@ next-env.d.ts
 /data/papers/datasets/versions/
 /data/papers/analysis/current/
 /data/papers/analysis/runs/
+/data/papers/benchmark/current/
+/data/papers/benchmark/runs/

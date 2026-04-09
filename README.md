@@ -218,7 +218,8 @@ StealthHumanizer/
 │   ├── sitemap.xml              # SEO sitemap
 │   ├── robots.txt               # Crawler rules
 │   ├── DATA_PIPELINE.md         # PR1 open-access ingestion + provenance
-│   └── FULLTEXT_ANALYSIS.md     # PR2 full-text extraction + corpus analysis
+│   ├── FULLTEXT_ANALYSIS.md     # PR2 full-text extraction + corpus analysis
+│   └── HUMAN_AI_SIGNAL_LAYER.md # PR3 benchmark + signal/label validation
 ├── .github/
 │   ├── workflows/
 │   │   ├── pages.yml            # GitHub Pages auto-deploy

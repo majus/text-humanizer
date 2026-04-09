@@ -2,6 +2,8 @@
 
 PR2 adds document-level full-text extraction and corpus-level analysis on top of the PR1 metadata foundation.
 
+For the next layer (human vs AI benchmark + signal validation), see `docs/HUMAN_AI_SIGNAL_LAYER.md`.
+
 ## Scope of PR2
 
 - PDF / DOCX / TXT / HTML extraction with normalization
