@@ -10,7 +10,7 @@ import {
   trainBaseline,
 } from "./lib/training.mjs";
 import { sha256 } from "../papers/lib/hash.mjs";
-import { ensureDir, fileExists, readJson, readJsonl, writeJson, writeJsonl } from "../papers/lib/io.mjs";
+import { appendJsonl, ensureDir, readJson, readJsonl, writeJson, writeJsonl } from "../papers/lib/io.mjs";
 
 function utcStamp() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -143,20 +143,19 @@ async function main() {
   await writeJson(path.join(currentRoot, "metrics.report.json"), metrics);
   await writeJson(path.join(currentRoot, "run.manifest.json"), runManifest);
 
-  const lineagePath = path.join(lineageRoot, "experiments.jsonl");
-  const lineageEntry = {
-    runId,
-    generatedAt: runManifest.generatedAt,
-    benchmarkRowsPath: runManifest.benchmarkRowsPath,
+  await appendJsonl(path.join(lineageRoot, "experiments.jsonl"), [
+    {
+      runId,
+      generatedAt: runManifest.generatedAt,
+      benchmarkRowsPath: runManifest.benchmarkRowsPath,
     metrics: {
       accuracy: advancedMetrics.accuracy,
       f1: advancedMetrics.f1,
       auroc: advancedMetrics.auroc,
     },
-    qualityGatePassed: runManifest.qualityGate.passed,
-  };
-  const previousLineage = (await fileExists(lineagePath)) ? await readJsonl(lineagePath) : [];
-  await writeJsonl(lineagePath, [...previousLineage, lineageEntry]);
+      qualityGatePassed: runManifest.qualityGate.passed,
+    },
+  ]);
 
   console.log(
     JSON.stringify(
