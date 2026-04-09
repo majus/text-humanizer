@@ -2,6 +2,8 @@
 
 This repository now includes a reproducible ingestion and dataset-versioning workflow for open-access journal metadata.
 
+For the next layer (full-text extraction + feature analysis), see `docs/FULLTEXT_ANALYSIS.md`.
+
 ## Scope of PR1
 
 - Reproducible ingestion from open-access source APIs (OpenAlex)

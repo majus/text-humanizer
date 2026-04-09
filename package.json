@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "papers:ingest": "node scripts/papers/ingest-open-access.mjs",
-    "papers:version": "node scripts/papers/version-dataset.mjs"
+    "papers:version": "node scripts/papers/version-dataset.mjs",
+    "papers:analyze": "node scripts/papers/analyze-fulltext.mjs"
   },
   "dependencies": {
     "@netlify/plugin-nextjs": "^5.15.9",

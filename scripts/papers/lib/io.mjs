@@ -21,6 +21,15 @@ export async function readJson(filePath) {
   return JSON.parse(content);
 }
 
+export async function readJsonl(filePath) {
+  const content = await fs.readFile(filePath, "utf8");
+  return content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
 export async function copyFile(src, dest) {
   await ensureDir(path.dirname(dest));
   await fs.copyFile(src, dest);

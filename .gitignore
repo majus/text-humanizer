@@ -38,3 +38,5 @@ next-env.d.ts
 /data/papers/raw/
 /data/papers/datasets/current/
 /data/papers/datasets/versions/
+/data/papers/analysis/current/
+/data/papers/analysis/runs/
