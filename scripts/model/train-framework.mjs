@@ -148,11 +148,11 @@ async function main() {
       runId,
       generatedAt: runManifest.generatedAt,
       benchmarkRowsPath: runManifest.benchmarkRowsPath,
-    metrics: {
-      accuracy: advancedMetrics.accuracy,
-      f1: advancedMetrics.f1,
-      auroc: advancedMetrics.auroc,
-    },
+      metrics: {
+        accuracy: advancedMetrics.accuracy,
+        f1: advancedMetrics.f1,
+        auroc: advancedMetrics.auroc,
+      },
       qualityGatePassed: runManifest.qualityGate.passed,
     },
   ]);
