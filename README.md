@@ -88,6 +88,31 @@ See [docs/configuration.md](./docs/configuration.md) for full details.
 3. Run humanization.
 4. Review detector/readability scores and iterate.
 
+
+### One-command legal corpus + training bootstrap (ready-made)
+
+For a complete local run (install + ingest + benchmark + train + eval) using the built-in open-access/Q1-oriented configs:
+
+```bash
+npm run pipeline:q1-ready
+```
+
+Faster reruns (skip reinstall):
+
+```bash
+npm run pipeline:q1-ready:skip-install
+```
+
+The wrapper (`scripts/papers/complete-ready-pipeline.mjs`) runs:
+
+1. `npm ci` (unless `--skip-install`)
+2. `node scripts/papers/batch-download-and-train.mjs` with Q1 OA configs
+3. `node scripts/model/evaluate-framework.mjs --manifest data/models/current/run.manifest.json`
+
+If ingestion fails due to provider/network limits, the batch stage falls back to a small bundled open-source seed set so the full pipeline can still complete.
+
+For very large corpora (for example, ~10k papers), keep PDFs/fulltext artifacts in object storage and track only configs/manifests in Git.
+
 ### Scripted benchmark/training smoke flow
 
 ```bash
