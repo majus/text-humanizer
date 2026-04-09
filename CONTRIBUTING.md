@@ -81,11 +81,67 @@ stealthhumanizer/
 
 ## Pull Request Process
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit changes with descriptive messages
-4. Push to your fork
-5. Open a Pull Request
+Follow this exact sequence with direct links:
+
+1. Open repository home:  
+   https://github.com/rudra496/StealthHumanizer
+
+2. Open branch list (copy your branch name):  
+   https://github.com/rudra496/StealthHumanizer/branches
+
+3. Confirm your branch contains your commits (example: `feature-login`).
+
+4. Open this exact compare URL (replace `YOUR_BRANCH`):  
+   https://github.com/rudra496/StealthHumanizer/compare/main...YOUR_BRANCH?quick_pull=1
+
+5. Verify on the compare page:
+   - Base branch is `main`
+   - Compare branch is `YOUR_BRANCH`
+   - Click **Create pull request**
+
+6. Fill in PR details:
+   - Add a clear title
+   - Add a clear description of your changes
+   - Click **Create pull request**
+
+7. Open PR list anytime here:  
+   https://github.com/rudra496/StealthHumanizer/pulls
+
+8. Open your PR from the list.
+
+9. Merge the PR:
+   - Scroll to the merge section
+   - Click **Merge pull request**
+   - Click **Confirm merge**
+
+10. Optional cleanup:
+    - Click **Delete branch** after merge
+
+11. If merge is blocked:
+    - Open the PR **Checks** tab
+    - Wait for pending checks or fix failing checks
+    - Retry merge after checks pass
+
+Reusable compare link template:
+
+`https://github.com/rudra496/StealthHumanizer/compare/main...YOUR_BRANCH?quick_pull=1`
+
+## Benchmark & Model Contribution Path (PR3+)
+
+Use the reproducible pipeline sequence:
+
+```bash
+npm run papers:benchmark -- --config data/papers/benchmark.config.example.json
+npm run model:train -- --config data/models/train.config.example.json
+npm run model:eval -- --manifest data/models/current/run.manifest.json
+```
+
+When contributing benchmark/model changes:
+
+- Keep label classes balanced (`human_academic` vs `ai_transformed`)
+- Preserve run manifests and quality-gate outputs
+- Do not bypass fail gates by lowering thresholds without justification
+- Update docs under `docs/` when adding metrics, policies, or evaluation criteria
 
 ### PR Checklist
 - [ ] Code compiles without errors (`npm run build`)
@@ -93,3 +149,4 @@ stealthhumanizer/
 - [ ] New features include updated types
 - [ ] UI changes are responsive (mobile + desktop)
 - [ ] No API keys or secrets in code
+- [ ] PR3/PR4 quality gates pass when related pipeline code is changed

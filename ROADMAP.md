@@ -49,6 +49,15 @@
 - [ ] Rate limit tracking and auto-provider switching
 - [ ] Undo/redo in text editor
 
+### Research Pipeline (PR3→PR9)
+- [x] PR3 benchmark layer (paired labels + signal/anti-pattern features + validation checks)
+- [x] PR4 deterministic training framework (baseline/advanced models + checkpoints + eval suite)
+- [x] PR5 rewrite optimization guards (confidence + fallback protection)
+- [x] PR6 production model scoring endpoint and API/UI confidence exposure
+- [x] PR7 safety policy gates, provenance disclosures, and audit logging
+- [x] PR8 CI quality bar (dataset + training smoke + fail gates + integration smoke)
+- [x] PR9 publication/reproducibility docs and contribution roadmap foundations
+
 ---
 
 ## v3.0 — Long Term Vision
@@ -90,4 +99,4 @@
 
 ---
 
-*Last updated: 2026-03-31*
+*Last updated: 2026-04-09*

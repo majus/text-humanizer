@@ -217,7 +217,14 @@ StealthHumanizer/
 ├── docs/
 │   ├── index.html               # Standalone GitHub Pages version
 │   ├── sitemap.xml              # SEO sitemap
-│   └── robots.txt               # Crawler rules
+│   ├── robots.txt               # Crawler rules
+│   ├── DATA_PIPELINE.md         # PR1 open-access ingestion + provenance
+│   ├── FULLTEXT_ANALYSIS.md     # PR2 full-text extraction + corpus analysis
+│   ├── HUMAN_AI_SIGNAL_LAYER.md # PR3 benchmark + signal/label validation
+│   ├── MODEL_TRAINING_FRAMEWORK.md # PR4 deterministic training + eval
+│   ├── HUMANIZATION_OPTIMIZATION.md # PR5 optimization + regression guards
+│   ├── PRODUCTION_GOVERNANCE.md # PR6-PR9 integration, safety, CI, publication
+│   └── BENCHMARK_METHODOLOGY.md # PR9 benchmark methodology + limitations
 ├── .github/
 │   ├── workflows/
 │   │   ├── pages.yml            # GitHub Pages auto-deploy
