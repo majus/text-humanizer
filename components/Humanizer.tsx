@@ -848,7 +848,9 @@ export default function Humanizer({ showToast }: HumanizerProps) {
             <p className="text-xs text-dark-400">Passes</p>
           </div>
           <div className="glass-card rounded-xl p-3 text-center">
-            <p className="text-xl font-bold text-dark-200">{result.confidenceReport?.confidence ?? 0}%</p>
+            <p className="text-xl font-bold text-dark-200">
+              {typeof result.confidenceReport?.confidence === 'number' ? `${result.confidenceReport.confidence}%` : 'N/A'}
+            </p>
             <p className="text-xs text-dark-400">Confidence</p>
           </div>
           <div className="glass-card rounded-xl p-3 text-center">

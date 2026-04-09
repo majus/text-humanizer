@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { splitSentencesLinear, tokenizeWords } from '@/lib/server/text-utils';
 
 type RuntimeModel = {
   bias: number;
@@ -12,28 +13,16 @@ const DEFAULT_MODEL: RuntimeModel = {
   values: [0.35, 0.35, 0.18, 0.25, 0.14, -0.33, -0.52, -0.24, -0.58, -0.19, -0.22],
 };
 
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .split(/\s+/)
-    .map((token) => token.replace(/[^a-z'-]/g, ''))
-    .filter((token) => token.length > 0 && /[a-z]/.test(token));
-}
-
-function sentenceSplit(text: string): string[] {
-  return text.match(/[^.!?]+[.!?]+/g)?.map((s) => s.trim()).filter(Boolean) || [text.trim()];
-}
-
 function ratio(part: number, total: number) {
   return total > 0 ? part / total : 0;
 }
 
 function extractRuntimeFeatures(text: string) {
-  const tokens = tokenize(text);
+  const tokens = tokenizeWords(text);
   const unique = new Set(tokens);
-  const sentences = sentenceSplit(text);
+  const sentences = splitSentencesLinear(text);
   const sentenceStarts = new Set(
-    sentences.map((sentence) => tokenize(sentence).slice(0, 2).join(' ')).filter(Boolean)
+    sentences.map((sentence) => tokenizeWords(sentence).slice(0, 2).join(' ')).filter(Boolean)
   );
   const transitions = (text.match(/\b(however|therefore|moreover|furthermore|additionally|consequently)\b/gi) || []).length;
   const hedges = (text.match(/\b(may|might|could|possibly|perhaps|appears|likely)\b/gi) || []).length;
@@ -49,7 +38,7 @@ function extractRuntimeFeatures(text: string) {
   let repeatedTrigrams = 0;
   for (const count of trigrams.values()) if (count > 1) repeatedTrigrams += count - 1;
 
-  const sentenceLengths = sentences.map((sentence) => tokenize(sentence).length);
+  const sentenceLengths = sentences.map((sentence) => tokenizeWords(sentence).length);
   const mean = sentenceLengths.reduce((sum, n) => sum + n, 0) / Math.max(sentenceLengths.length, 1);
   const variance =
     sentenceLengths.reduce((sum, n) => sum + (n - mean) ** 2, 0) / Math.max(sentenceLengths.length, 1);

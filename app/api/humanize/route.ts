@@ -13,6 +13,8 @@ import {
 } from '@/lib/server/humanization-governance';
 import { scoreHumanLikeness } from '@/lib/server/model-runtime';
 
+const MAX_BATCH_SIZE = 20;
+
 function countWords(text: string): number { return text.trim().split(/\s+/).filter(w => w.length > 0).length; }
 
 function chunkText(text: string, maxWords: number = 2500): string[] {
@@ -82,8 +84,8 @@ export async function POST(request: NextRequest) {
 
     if (!text || !model || !apiKey) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (countWords(text) > 10000) return NextResponse.json({ error: 'Exceeds 10,000 word limit' }, { status: 400 });
-    if (Array.isArray(batchTexts) && batchTexts.length > 20) {
-      return NextResponse.json({ error: 'Batch size exceeds limit (20).' }, { status: 400 });
+    if (Array.isArray(batchTexts) && batchTexts.length > MAX_BATCH_SIZE) {
+      return NextResponse.json({ error: `Batch size exceeds limit (${MAX_BATCH_SIZE}).` }, { status: 400 });
     }
 
     const safety = enforceSafetyPolicy(text);
@@ -104,8 +106,7 @@ export async function POST(request: NextRequest) {
     const modelId = providerInfo?.defaultModel || model;
 
     if (Array.isArray(batchTexts) && batchTexts.length > 0) {
-      const maxBatch = 20;
-      const selected = batchTexts.slice(0, maxBatch).filter((item: unknown) => typeof item === 'string' && item.trim().length > 0);
+      const selected = batchTexts.slice(0, MAX_BATCH_SIZE).filter((item: unknown) => typeof item === 'string' && item.trim().length > 0);
       const batchResults: Array<{
         index: number;
         fullText: string;

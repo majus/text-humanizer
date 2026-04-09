@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { tokenizeWords } from '@/lib/server/text-utils';
 
 function tokenize(text: string): string[] {
-  return (text.toLowerCase().match(/\b[a-z][a-z'-]*\b/g) || []).filter(Boolean);
+  return tokenizeWords(text);
 }
 
 function jaccard(a: Set<string>, b: Set<string>): number {
