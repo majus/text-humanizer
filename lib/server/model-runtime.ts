@@ -13,7 +13,11 @@ const DEFAULT_MODEL: RuntimeModel = {
 };
 
 function tokenize(text: string): string[] {
-  return (text.toLowerCase().match(/\b[a-z][a-z'-]*\b/g) || []).filter(Boolean);
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.replace(/[^a-z'-]/g, ''))
+    .filter((token) => token.length > 0 && /[a-z]/.test(token));
 }
 
 function sentenceSplit(text: string): string[] {

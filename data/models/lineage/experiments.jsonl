@@ -1,1 +1,1 @@
-{"runId":"local-pr4-smoke","generatedAt":"2026-04-09T02:58:12.212Z","benchmarkRowsPath":"data/papers/benchmark/current/benchmark.rows.jsonl","metrics":{"accuracy":1,"f1":1,"auroc":1},"qualityGatePassed":true}
+{"runId":"local-pr4-smoke-2","generatedAt":"2026-04-09T03:02:04.394Z","benchmarkRowsPath":"data/papers/benchmark/current/benchmark.rows.jsonl","metrics":{"accuracy":1,"f1":1,"auroc":1},"qualityGatePassed":true}
