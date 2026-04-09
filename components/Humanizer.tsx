@@ -115,6 +115,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
   const [enableChain, setEnableChain] = useState(false);
   const [selectedChainModels, setSelectedChainModels] = useState<string[]>([]);
   const [pipelineStep, setPipelineStep] = useState('');
+  const [preferredModel, setPreferredModel] = useState<ModelProvider>('gemini');
 
   const wordCount = countWords(inputText);
 
@@ -139,7 +140,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
   const getApiCredentials = () => {
     let keys: Record<string, string | undefined> = {};
     try { const s = localStorage.getItem('stealthhumanizer_api_keys'); if (s) keys = JSON.parse(s); } catch {}
-    const providerId = Object.keys(keys).find(k => keys[k]) || 'gemini';
+    const providerId = (keys[preferredModel] ? preferredModel : Object.keys(keys).find(k => keys[k]) || 'gemini') as ModelProvider;
     const apiKey = keys[providerId];
     return { providerId, apiKey };
   };
@@ -180,15 +181,18 @@ export default function Humanizer({ showToast }: HumanizerProps) {
       setPipelineStep('');
       setProgress({ pass: 1, max: 1, message: 'Done!' });
 
+      const conf = data?.confidenceReport?.confidence;
       const scoreMsg = data.finalScore >= 70 ? `🎉 ${data.finalScore}% human!` : `Score: ${data.finalScore}% human`;
+      const confMsg = typeof conf === 'number' ? ` | Confidence: ${conf}%` : '';
       showToast('success', `Done with ${data.modelName} (${data.passes} pass${data.passes > 1 ? 'es' : ''}) — ${scoreMsg}`);
+      if (confMsg) showToast('info', `Detector confidence${confMsg}`);
     } catch (err: any) {
       showToast('error', err.message || 'Something went wrong');
     } finally {
       setLoading(false);
       setProgress({ pass: 0, max: 0, message: '' });
     }
-  }, [inputText, level, style, tone, customTone, language, targetScore, showToast, wordCount]);
+  }, [inputText, level, style, tone, customTone, language, targetScore, showToast, wordCount, preferredModel]);
 
   const handleCopy = () => { if (result) { navigator.clipboard.writeText(result.fullText); showToast('success', 'Copied!'); } };
   const handleDownload = (format: 'txt' | 'docx') => {
@@ -444,7 +448,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
           </button>
           {showAdvanced && (
             <div className="mt-3 space-y-4 animate-fade-in">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
                     <Target className="w-4 h-4 text-accent-400" /> Target Human Score: {targetScore}%
@@ -460,6 +464,15 @@ export default function Humanizer({ showToast }: HumanizerProps) {
                   <select value={language} onChange={e => setLanguage(e.target.value)}
                     className="w-full px-3 py-2 bg-dark-800 border border-dark-700/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50">
                     {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
+                    <Sparkles className="w-4 h-4 text-accent-400" /> Model Selection
+                  </label>
+                  <select value={preferredModel} onChange={e => setPreferredModel(e.target.value as ModelProvider)}
+                    className="w-full px-3 py-2 bg-dark-800 border border-dark-700/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50">
+                    {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.name}{p.free ? ' (Free)' : ''}</option>)}
                   </select>
                 </div>
               </div>
@@ -813,7 +826,7 @@ export default function Humanizer({ showToast }: HumanizerProps) {
 
       {/* Stats */}
       {result && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-slide-up">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 animate-slide-up">
           <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-xl font-bold text-accent-400">{result.wordCount.input}</p>
             <p className="text-xs text-dark-400">Input Words</p>
@@ -833,6 +846,16 @@ export default function Humanizer({ showToast }: HumanizerProps) {
           <div className="glass-card rounded-xl p-3 text-center">
             <p className="text-xl font-bold text-dark-200">{result.passes}</p>
             <p className="text-xs text-dark-400">Passes</p>
+          </div>
+          <div className="glass-card rounded-xl p-3 text-center">
+            <p className="text-xl font-bold text-dark-200">{result.confidenceReport?.confidence ?? 0}%</p>
+            <p className="text-xs text-dark-400">Confidence</p>
+          </div>
+          <div className="glass-card rounded-xl p-3 text-center">
+            <p className={`text-xs font-bold ${result.fallbackBehavior?.used ? 'text-yellow-400' : 'text-green-400'}`}>
+              {result.fallbackBehavior?.used ? 'Enabled' : 'Not Used'}
+            </p>
+            <p className="text-xs text-dark-400">Fallback Guard</p>
           </div>
         </div>
       )}

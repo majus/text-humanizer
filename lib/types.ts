@@ -77,6 +77,25 @@ export interface HumanizationResult {
   passes: number;
   finalScore: number;
   options: HumanizationOptions;
+  confidenceReport?: {
+    humanLikenessScore: number;
+    confidence: number;
+    calibrationBand: 'high' | 'medium' | 'low';
+  };
+  runtimeModelScore?: {
+    modelSource: string;
+    probabilityHuman: number;
+    score: number;
+  };
+  fallbackBehavior?: {
+    used: boolean;
+    reason: string;
+  };
+  provenanceDisclosure?: {
+    source: string;
+    policyVersion: string;
+    modelSelection: string;
+  };
 }
 
 // ==================== DETECTION TYPES ====================

@@ -87,9 +87,27 @@ stealthhumanizer/
 4. Push to your fork
 5. Open a Pull Request
 
+## Benchmark & Model Contribution Path (PR3+)
+
+Use the reproducible pipeline sequence:
+
+```bash
+npm run papers:benchmark -- --config data/papers/benchmark.config.example.json
+npm run model:train -- --config data/models/train.config.example.json
+npm run model:eval -- --manifest data/models/current/run.manifest.json
+```
+
+When contributing benchmark/model changes:
+
+- Keep label classes balanced (`human_academic` vs `ai_transformed`)
+- Preserve run manifests and quality-gate outputs
+- Do not bypass fail gates by lowering thresholds without justification
+- Update docs under `docs/` when adding metrics, policies, or evaluation criteria
+
 ### PR Checklist
 - [ ] Code compiles without errors (`npm run build`)
 - [ ] No TypeScript errors
 - [ ] New features include updated types
 - [ ] UI changes are responsive (mobile + desktop)
 - [ ] No API keys or secrets in code
+- [ ] PR3/PR4 quality gates pass when related pipeline code is changed

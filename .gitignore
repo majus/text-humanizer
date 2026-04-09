@@ -42,3 +42,6 @@ next-env.d.ts
 /data/papers/analysis/runs/
 /data/papers/benchmark/current/
 /data/papers/benchmark/runs/
+/data/models/current/
+/data/models/runs/
+/data/governance/audit/

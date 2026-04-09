@@ -10,7 +10,10 @@
     "papers:ingest": "node scripts/papers/ingest-open-access.mjs",
     "papers:version": "node scripts/papers/version-dataset.mjs",
     "papers:analyze": "node scripts/papers/analyze-fulltext.mjs",
-    "papers:benchmark": "node scripts/papers/build-benchmark.mjs"
+    "papers:benchmark": "node scripts/papers/build-benchmark.mjs",
+    "model:train": "node scripts/model/train-framework.mjs",
+    "model:eval": "node scripts/model/evaluate-framework.mjs",
+    "test:integration": "node scripts/tests/integration-smoke.mjs"
   },
   "dependencies": {
     "@netlify/plugin-nextjs": "^5.15.9",

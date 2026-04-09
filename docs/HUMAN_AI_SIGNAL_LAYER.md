@@ -2,6 +2,8 @@
 
 PR3 builds a labeled benchmark set from PR1 records, adds humanization/anti-pattern features, and validates label/data quality before PR4 training.
 
+For PR4 training/evaluation, see `docs/MODEL_TRAINING_FRAMEWORK.md`.
+
 ## Scope of PR3
 
 - Paired benchmark generation: `human_academic` + `ai_transformed`
