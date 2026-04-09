@@ -9,9 +9,7 @@ function tokenize(text: string): string[] {
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (!a.size && !b.size) return 1;
   let intersection = 0;
-  a.forEach((item) => {
-    if (b.has(item)) intersection++;
-  });
+  for (const item of a) if (b.has(item)) intersection++;
   const union = a.size + b.size - intersection;
   return union > 0 ? intersection / union : 0;
 }
