@@ -1,12 +1,12 @@
 'use client';
 
-import { GitFork, Briefcase, MessageCircle, CirclePlay, Mail } from 'lucide-react';
+import { Terminal, Users, AtSign, Video, Mail } from 'lucide-react';
 
 const socials = [
-  { name: 'GitHub', href: 'https://github.com/rudra496', icon: GitFork },
-  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/rudra-sarker-573b15296', icon: Briefcase },
-  { name: 'X', href: 'https://x.com/Rudra496', icon: MessageCircle },
-  { name: 'YouTube', href: 'https://youtube.com/@rudrasarker9732', icon: CirclePlay },
+  { name: 'GitHub', href: 'https://github.com/rudra496', icon: Terminal },
+  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/rudra-sarker-573b15296', icon: Users },
+  { name: 'X', href: 'https://x.com/Rudra496', icon: AtSign },
+  { name: 'YouTube', href: 'https://youtube.com/@rudrasarker9732', icon: Video },
 ];
 
 export default function Footer() {
