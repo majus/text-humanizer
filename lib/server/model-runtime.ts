@@ -36,7 +36,9 @@ function extractRuntimeFeatures(text: string) {
     trigrams.set(key, (trigrams.get(key) || 0) + 1);
   }
   let repeatedTrigrams = 0;
-  for (const count of trigrams.values()) if (count > 1) repeatedTrigrams += count - 1;
+  trigrams.forEach((count) => {
+    if (count > 1) repeatedTrigrams += count - 1;
+  });
 
   const sentenceLengths = sentences.map((sentence) => tokenizeWords(sentence).length);
   const mean = sentenceLengths.reduce((sum, n) => sum + n, 0) / Math.max(sentenceLengths.length, 1);
