@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RewriteLevel, StylePreset, TonePreset, ModelProvider } from '@/lib/types';
 import { getRehumanizePrompt } from '@/lib/prompts';
 import { generateWithProvider, getProvider } from '@/lib/providers';
+import { postprocess } from '@/lib/postprocess';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,10 +32,11 @@ export async function POST(request: NextRequest) {
           replacementIdx++;
         }
       }
-      return NextResponse.json({ rehumanizedSentences: rehumanized, fullText: newText });
+      const processedText = postprocess(newText, { light: true });
+      return NextResponse.json({ rehumanizedSentences: rehumanized, fullText: processedText });
     }
 
-    return NextResponse.json({ rehumanizedSentences: rehumanized, fullText: rehumanized.join(' ') });
+    return NextResponse.json({ rehumanizedSentences: rehumanized, fullText: postprocess(rehumanized.join(' '), { light: true }) });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
   }

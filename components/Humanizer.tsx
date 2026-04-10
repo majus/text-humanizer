@@ -261,25 +261,41 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
     const { providerId, apiKey } = getApiCredentials();
     if (!apiKey) { showToast('warning', 'No API key configured'); return; }
 
-    const detection = detectAI(result.fullText);
-    const flagged = detection.sentences.filter((s: any) => s.classification !== 'human').map((s: any) => s.text);
-    if (flagged.length === 0) { showToast('info', 'No flagged sentences to re-humanize!'); return; }
-
     setRehumanizing(true);
+    let currentFullText = result.fullText;
+    let currentScore = result.finalScore;
+    let round = 0;
+    const maxRounds = 8;
+
     try {
-      const resp = await fetch('/api/rehumanize', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          flaggedSentences: flagged, level, style, tone, customTone,
-          model: providerId, apiKey, fullText: result.fullText,
-        }),
-      });
-      if (!resp.ok) throw new Error('Re-humanization failed');
-      const data = await resp.json();
-      
-      const newDetection = detectAI(data.fullText);
+      while (currentScore < 100 && round < maxRounds) {
+        round++;
+        showToast('info', `Re-humanizing round ${round}... (current: ${currentScore}%)`);
+
+        const detection = detectAI(currentFullText);
+        const flagged = detection.sentences.filter((s: any) => s.classification !== 'human').map((s: any) => s.text);
+        if (flagged.length === 0) break;
+
+        const resp = await fetch('/api/rehumanize', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flaggedSentences: flagged, level, style, tone, customTone,
+            model: providerId, apiKey, fullText: currentFullText,
+          }),
+        });
+        if (!resp.ok) break;
+        const data = await resp.json();
+
+        currentFullText = data.fullText;
+        const newDetection = detectAI(currentFullText);
+        currentScore = newDetection.score;
+
+        if (round > 2 && currentScore <= result.finalScore + 5) break;
+      }
+
+      const finalDetection = detectAI(currentFullText);
       const origSentences = result.sentences.map((s: any) => s.original);
-      const newSentencesSplit = data.fullText.match(/[^.!?]+[.!?]+[\s]*/g)?.map((s: string) => s.trim()).filter((s: string) => s.length > 0) || [data.fullText.trim()];
+      const newSentencesSplit = currentFullText.match(/[^.!?]+[.!?]+[\s]*/g)?.map((s: string) => s.trim()).filter((s: string) => s.length > 0) || [currentFullText.trim()];
       const maxLen = Math.max(origSentences.length, newSentencesSplit.length);
       const sentences = [];
       for (let i = 0; i < maxLen; i++) {
@@ -287,19 +303,26 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
           original: origSentences[i] || '',
           humanized: newSentencesSplit[i] || '',
           alternatives: [], index: i,
-          detectionScore: newDetection.sentences[i]?.score,
+          detectionScore: finalDetection.sentences[i]?.score,
         });
       }
 
       setResult({
         ...result,
         sentences,
-        fullText: data.fullText,
-        passes: result.passes + 1,
-        finalScore: newDetection.score,
-        wordCount: { ...result.wordCount, output: countWords(data.fullText) },
+        fullText: currentFullText,
+        passes: result.passes + round,
+        finalScore: finalDetection.score,
+        wordCount: { ...result.wordCount, output: countWords(currentFullText) },
       });
-      showToast('success', `Re-humanized ${flagged.length} sentences → ${newDetection.score}% human`);
+
+      if (finalDetection.score >= 100) {
+        showToast('success', `🎯 Perfect! 100% human in ${round} round${round > 1 ? 's' : ''}!`);
+      } else if (round >= maxRounds) {
+        showToast('info', `Re-humanized ${round} rounds → ${finalDetection.score}% human (max rounds reached)`);
+      } else {
+        showToast('success', `Re-humanized ${round} round${round > 1 ? 's' : ''} → ${finalDetection.score}% human`);
+      }
     } catch (err: any) {
       showToast('error', err.message);
     } finally {
@@ -767,7 +790,7 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
               <button onClick={handleRehumanize} disabled={rehumanizing || flaggedCount === 0}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <RotateCcw className={`w-4 h-4 ${rehumanizing ? 'animate-spin' : ''}`} />
-                {rehumanizing ? 'Re-humanizing...' : `🔄 Re-Humanize Flagged (${flaggedCount})`}
+                {rehumanizing ? 'Re-humanizing...' : `🔄 Re-Humanize Until 100% (${flaggedCount} flagged)`}
               </button>
               <button onClick={handleGrammarCheck} disabled={grammarChecking}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
