@@ -517,6 +517,27 @@ ${CHINESE_LEVEL_INSTRUCTIONS[level]}
 只返回改写后的文本，不要任何解释、注释或前言。${isTraditional ? '\n使用繁体中文输出。' : ''}`;
 }
 
+// ==================== CORPUS-AWARE PROMPT ====================
+import { buildStyleInjectionPrompt, hasStyleModel } from './style-model';
+
+/**
+ * Generate a corpus-aware system prompt that combines existing anti-detection
+ * rules with specific style constraints extracted from real academic papers.
+ */
+export function getCorpusAwareSystemPrompt(
+  level: RewriteLevel,
+  style: StylePreset,
+  tone: TonePreset = 'conversational',
+  customTone?: string,
+  writingSample?: string,
+  domain?: string,
+  language?: string
+): string {
+  const base = getSystemPrompt(level, style, tone, customTone, writingSample, language);
+  if (!hasStyleModel()) return base;
+  return base + buildStyleInjectionPrompt(domain);
+}
+
 // Temperature and top_p settings per level
 export const LEVEL_PARAMS: Record<RewriteLevel, { temperature: number; topP: number }> = {
   light: { temperature: 0.7, topP: 0.9 },

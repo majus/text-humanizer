@@ -4,6 +4,8 @@
 
 import { getRandomSafeSynonym } from './synonyms';
 import { applyCollocation, applyRandomCollocation } from './collocations';
+import type { CorpusStyleModel } from './style-model';
+import { loadStyleModel } from './style-model';
 
 // ==================== HELPERS ====================
 
@@ -387,6 +389,154 @@ function randomizeParagraphs(text: string): string {
   }
 
   return joinParagraphs(result);
+}
+
+// ==================== CORPUS-AWARE POST-PROCESSING ====================
+
+/**
+ * Post-process text using corpus statistics to match real human writing patterns.
+ * Targets sentence length distribution, transition frequency, and burstiness.
+ */
+export function corpusAwarePostprocess(text: string, styleModel?: CorpusStyleModel): string {
+  const model = styleModel || loadStyleModel();
+  if (!model) return text;
+
+  let result = text;
+
+  // 1. Adjust sentence lengths to match corpus distribution
+  result = adjustSentenceLengthsToCorpus(result, model);
+
+  // 2. Adjust transition word frequency
+  result = adjustTransitionFrequency(result, model);
+
+  // 3. Human voice injection
+  result = injectHumanVoice(result, model);
+
+  return result;
+}
+
+function adjustSentenceLengthsToCorpus(text: string, model: CorpusStyleModel): string {
+  const sl = model.sentenceLengthDistribution;
+  const paragraphs = splitParagraphs(text);
+  return paragraphs.map(p => {
+    const sentences = splitSentences(p);
+    const adjusted = sentences.map(s => {
+      const wc = wordCount(s);
+      const targetMax = sl.p90;
+
+      // If sentence is way too long (>p90 + 10), try to split
+      if (wc > targetMax + 10 && chance(0.4)) {
+        return trySplitSentence(s);
+      }
+      return s;
+    });
+    return adjusted.join(' ');
+  }).join('\n\n');
+}
+
+function trySplitSentence(sentence: string): string {
+  const breakPatterns = [
+    /,\s+(?:and|but|or|while|whereas|which|that)\s+/gi,
+    /,\s+(?:however|therefore|meaning)\s+/gi,
+  ];
+  for (const pattern of breakPatterns) {
+    const match = sentence.match(pattern);
+    if (match && match.index !== undefined && match.index > 10 && match.index < sentence.length - 10) {
+      const first = sentence.slice(0, match.index).replace(/[,]$/, '');
+      const second = sentence.slice(match.index).replace(/^,?\s*/, '');
+      const capitalized = second.charAt(0).toUpperCase() + second.slice(1);
+      return first + '. ' + capitalized;
+    }
+  }
+  return sentence;
+}
+
+function adjustTransitionFrequency(text: string, model: CorpusStyleModel): string {
+  const per1000 = wordCount(text);
+  let currentTransitions = 0;
+  const lower = text.toLowerCase();
+  const transitionWords = ['however', 'therefore', 'moreover', 'furthermore', 'additionally',
+    'consequently', 'nevertheless', 'meanwhile', 'subsequently', 'thus', 'hence',
+    'accordingly', 'similarly', 'likewise', 'conversely'];
+  for (const w of transitionWords) {
+    const regex = new RegExp(`\\b${w}\\b`, 'gi');
+    const matches = lower.match(regex);
+    if (matches) currentTransitions += matches.length;
+  }
+  const currentPer1000 = (currentTransitions / Math.max(per1000, 1)) * 1000;
+
+  // If too many transitions, remove some
+  const targetTotal = Object.values(model.transitionWordFrequency).reduce((s, v) => s + v, 0);
+  if (currentPer1000 > targetTotal * 1.5) {
+    let result = text;
+    let toRemove = Math.floor(currentTransitions * 0.3);
+    for (const w of transitionWords) {
+      if (toRemove <= 0) break;
+      const regex = new RegExp(`\\b${w}\\b[,]?\s*`, 'gi');
+      result = result.replace(regex, (match) => {
+        if (toRemove > 0) { toRemove--; return ''; }
+        return match;
+      });
+    }
+    return result.replace(/\s{2,}/g, ' ').replace(/\.+\./g, '.');
+  }
+  return text;
+}
+
+function injectHumanVoice(text: string, model: CorpusStyleModel): string {
+  let result = text;
+  const contractionMean = model.contractionFrequency.mean;
+  const words = result.split(/\s+/);
+  const wc = words.length;
+
+  // Count current contractions
+  const currentContractions = (result.match(/\w+'(?:t|s|re|ve|ll|d|m)\b/gi) || []).length;
+  const currentPer1000 = (currentContractions / Math.max(wc, 1)) * 1000;
+
+  // Add contractions if below target
+  if (currentPer1000 < contractionMean && chance(0.5)) {
+    const expansions = [
+      ['do not', "don't"], ['can not', "can't"], ['cannot', "can't"],
+      ['will not', "won't"], ['is not', "isn't"], ['are not', "aren't"],
+      ['it is', "it's"], ['that is', "that's"], ['there is', "there's"],
+      ['we are', "we're"], ['they are', "they're"],
+    ];
+    for (const [expanded, contracted] of expansions) {
+      if (currentPer1000 >= contractionMean) break;
+      if (result.toLowerCase().includes(expanded)) {
+        const regex = new RegExp(expanded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        result = result.replace(regex, contracted);
+        break; // One per pass
+      }
+    }
+  }
+
+  // Occasionally start a sentence with a conjunction (10% chance per paragraph)
+  if (chance(0.10)) {
+    const paragraphs = splitParagraphs(result);
+    const pIdx = Math.floor(Math.random() * paragraphs.length);
+    const sentences = splitSentences(paragraphs[pIdx]);
+    if (sentences.length > 1) {
+      const sIdx = 1 + Math.floor(Math.random() * (sentences.length - 1));
+      const conjunction = randomPick(['And', 'But', 'So', 'Plus']);
+      sentences[sIdx] = conjunction + ' ' + sentences[sIdx].charAt(0).toLowerCase() + sentences[sIdx].slice(1);
+      paragraphs[pIdx] = sentences.join(' ');
+      result = joinParagraphs(paragraphs);
+    }
+  }
+
+  // Occasionally add a parenthetical aside (5% chance)
+  if (chance(0.05)) {
+    const asides = ['which is interesting', 'interestingly', 'if you think about it', 'at least that\'s the idea', 'in my view'];
+    const aside = randomPick(asides);
+    // Insert before the last period
+    const lastPeriod = result.lastIndexOf('.');
+    if (lastPeriod > 20) {
+      result = result.slice(0, lastPeriod) + ` (${aside})` + result.slice(lastPeriod);
+    }
+  }
+
+  return result;
 }
 
 // ==================== MAIN POST-PROCESS FUNCTION ====================

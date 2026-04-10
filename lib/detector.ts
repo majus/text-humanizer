@@ -2,6 +2,7 @@
 
 import { DetectionResult, SentenceDetectionResult } from './types';
 import { calculateReadability } from './readability';
+import type { CorpusStyleModel, CalibratedThresholds } from './style-model';
 
 // ==================== PATTERN DATABASES ====================
 
@@ -293,14 +294,56 @@ function analyzeSentence(sentence: string): SentenceDetectionResult {
   score = Math.max(0, Math.min(100, score));
 
   let classification: 'human' | 'maybe' | 'ai';
-  if (score >= 60) classification = 'human';
-  else if (score >= 40) classification = 'maybe';
+  const sFloor = calibratedThresholds?.humanScoreMin ?? 60;
+  const sMid = Math.max(20, sFloor - 20);
+  if (score >= sFloor) classification = 'human';
+  else if (score >= sMid) classification = 'maybe';
   else classification = 'ai';
 
   return { text: sentence, score, classification, issues };
 }
 
 // ==================== MAIN DETECTION FUNCTION ====================
+
+/** Corpus-calibrated thresholds (set via calibrateWithCorpus) */
+let calibratedThresholds: CalibratedThresholds | null = null;
+
+/**
+ * Calibrate the detector against corpus statistics.
+ * Adjusts weights and thresholds based on real human writing patterns.
+ */
+export function calibrateWithCorpus(styleModel: CorpusStyleModel): CalibratedThresholds {
+  const burstinessFloor = Math.round(styleModel.burstinessProfile.mean * 50);
+  const vocabularyFloor = Math.round(styleModel.vocabularyDiversityRange.mean * 85);
+  const totalTransitions = Object.values(styleModel.transitionWordFrequency)
+    .reduce((sum, v) => sum + v, 0);
+  const transitionCeiling = Math.round(totalTransitions * 200);
+
+  calibratedThresholds = {
+    humanScoreMin: 45,
+    humanScoreMax: 95,
+    humanScoreMedian: 70,
+    targetScore: 75,
+    burstinessFloor,
+    vocabularyFloor,
+    transitionCeiling,
+  };
+  return calibratedThresholds;
+}
+
+/**
+ * Get the realistic score range for human writing based on corpus analysis.
+ */
+export function getHumanScoreRange(): { min: number; max: number; median: number } {
+  if (calibratedThresholds) {
+    return {
+      min: calibratedThresholds.humanScoreMin,
+      max: calibratedThresholds.humanScoreMax,
+      median: calibratedThresholds.humanScoreMedian,
+    };
+  }
+  return { min: 50, max: 90, median: 70 };
+}
 
 export function detectAI(text: string): DetectionResult {
   const sentences = splitIntoSentences(text);
@@ -352,8 +395,10 @@ export function detectAI(text: string): DetectionResult {
   );
 
   let overallVerdict: 'human' | 'ai' | 'mixed';
-  if (overallScore >= 60) overallVerdict = 'human';
-  else if (overallScore >= 40) overallVerdict = 'mixed';
+  const humanFloor = calibratedThresholds?.humanScoreMin ?? 60;
+  const mixedFloor = Math.max(20, humanFloor - 20);
+  if (overallScore >= humanFloor) overallVerdict = 'human';
+  else if (overallScore >= mixedFloor) overallVerdict = 'mixed';
   else overallVerdict = 'ai';
 
   return {

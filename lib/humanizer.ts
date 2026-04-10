@@ -1,7 +1,8 @@
 // StealthHumanizer v2 - Multi-Pass Humanization Engine
 
 import { HumanizationOptions, HumanizationResult, SentenceResult } from './types';
-import { getSystemPrompt, getRehumanizePrompt } from './prompts';
+import { getSystemPrompt, getRehumanizePrompt, getCorpusAwareSystemPrompt } from './prompts';
+import { getCorpusCalibratedThresholds, hasStyleModel } from './style-model';
 import { generateWithProvider, getProvider, generateAlternatives } from './providers';
 import { detectAI } from './detector';
 import { chunkText, countWords, addToHistory } from './storage';
@@ -35,7 +36,10 @@ async function humanizeChunk(
   apiKey: string,
   customModel?: string
 ): Promise<string> {
-  const systemPrompt = getSystemPrompt(options.level, options.style, options.tone, options.customTone, undefined, options.language);
+  // Use corpus-aware prompt if style model is available
+  const systemPrompt = hasStyleModel()
+    ? getCorpusAwareSystemPrompt(options.level, options.style, options.tone, options.customTone, undefined, options.domain, options.language)
+    : getSystemPrompt(options.level, options.style, options.tone, options.customTone, undefined, options.language);
   const providerInfo = getProvider(options.model);
   const model = customModel || providerInfo?.defaultModel || options.model;
   
@@ -71,7 +75,9 @@ export async function humanizeText(
   onProgress?: (pass: number, maxPasses: number, message: string) => void
 ): Promise<HumanizationResult> {
   const inputWordCount = countWords(text);
-  const targetScore = options.targetScore || 80;
+  // Use corpus-calibrated thresholds if available
+  const calibratedThresholds = hasStyleModel() ? getCorpusCalibratedThresholds() : null;
+  const targetScore = options.targetScore || calibratedThresholds?.targetScore || 80;
   const maxPasses = options.level === 'ninja' ? 2 : options.level === 'aggressive' ? 2 : 1;
   const chunks = chunkText(text, 2500);
 

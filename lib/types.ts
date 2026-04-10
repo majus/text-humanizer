@@ -57,6 +57,8 @@ export interface HumanizationOptions {
   model: ModelProvider;
   targetScore?: number;
   language: string;
+  /** Academic domain for corpus-calibrated style matching */
+  domain?: string;
 }
 
 export interface SentenceResult {

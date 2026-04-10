@@ -1,0 +1,243 @@
+{
+  "generatedAt": "2026-04-10T18:22:19.262Z",
+  "paperCount": 500,
+  "global": {
+    "avgSentenceLength": 29,
+    "avgBurstiness": 0.753,
+    "avgVocabularyDiversity": 0.376,
+    "avgContractionFrequency": 0.18,
+    "avgPassiveVoiceRatio": 0,
+    "avgFirstPersonPronouns": 34.72,
+    "avgHedgingFrequency": 0,
+    "avgWordsPerParagraph": 138.8
+  },
+  "byDomain": {
+    "Neuroscience": {
+      "paperCount": 43,
+      "sentenceLengthMean": 28,
+      "burstinessMean": 0.774,
+      "vocabularyDiversityMean": 0.386,
+      "passiveVoiceMean": 0
+    },
+    "Chemistry": {
+      "paperCount": 41,
+      "sentenceLengthMean": 28.8,
+      "burstinessMean": 0.768,
+      "vocabularyDiversityMean": 0.38,
+      "passiveVoiceMean": 0
+    },
+    "Materials Science": {
+      "paperCount": 42,
+      "sentenceLengthMean": 30,
+      "burstinessMean": 0.742,
+      "vocabularyDiversityMean": 0.393,
+      "passiveVoiceMean": 0
+    },
+    "Environmental Science": {
+      "paperCount": 38,
+      "sentenceLengthMean": 29.2,
+      "burstinessMean": 0.765,
+      "vocabularyDiversityMean": 0.358,
+      "passiveVoiceMean": 0
+    },
+    "Psychology": {
+      "paperCount": 47,
+      "sentenceLengthMean": 28.2,
+      "burstinessMean": 0.755,
+      "vocabularyDiversityMean": 0.37,
+      "passiveVoiceMean": 0
+    },
+    "Economics": {
+      "paperCount": 45,
+      "sentenceLengthMean": 29,
+      "burstinessMean": 0.746,
+      "vocabularyDiversityMean": 0.368,
+      "passiveVoiceMean": 0
+    },
+    "Engineering": {
+      "paperCount": 37,
+      "sentenceLengthMean": 29.5,
+      "burstinessMean": 0.738,
+      "vocabularyDiversityMean": 0.356,
+      "passiveVoiceMean": 0
+    },
+    "Physics": {
+      "paperCount": 40,
+      "sentenceLengthMean": 30.3,
+      "burstinessMean": 0.737,
+      "vocabularyDiversityMean": 0.35,
+      "passiveVoiceMean": 0
+    },
+    "Mathematics": {
+      "paperCount": 38,
+      "sentenceLengthMean": 28,
+      "burstinessMean": 0.746,
+      "vocabularyDiversityMean": 0.41,
+      "passiveVoiceMean": 0
+    },
+    "Biology": {
+      "paperCount": 46,
+      "sentenceLengthMean": 29.2,
+      "burstinessMean": 0.751,
+      "vocabularyDiversityMean": 0.376,
+      "passiveVoiceMean": 0
+    },
+    "Computer Science": {
+      "paperCount": 44,
+      "sentenceLengthMean": 29.2,
+      "burstinessMean": 0.764,
+      "vocabularyDiversityMean": 0.375,
+      "passiveVoiceMean": 0
+    },
+    "Medicine": {
+      "paperCount": 39,
+      "sentenceLengthMean": 28.5,
+      "burstinessMean": 0.75,
+      "vocabularyDiversityMean": 0.396,
+      "passiveVoiceMean": 0
+    }
+  },
+  "sentenceLengthDistribution": {
+    "mean": 28.7,
+    "median": 16,
+    "stddev": 5,
+    "min": 1,
+    "max": 101,
+    "p10": 2,
+    "p25": 12,
+    "p75": 43,
+    "p90": 69
+  },
+  "burstinessProfile": {
+    "mean": 0.753,
+    "stddev": 0.101
+  },
+  "vocabularyDiversityRange": {
+    "min": 0.178,
+    "max": 0.78,
+    "mean": 0.376
+  },
+  "transitionWordFrequency": {
+    "rather": 1.23,
+    "furthermore": 0.13
+  },
+  "aiPhraseFrequency": {
+    "it is important to note": 0.164,
+    "multifaceted": 0.174,
+    "robust": 0.174,
+    "seamless": 0.24,
+    "groundbreaking": 0.24,
+    "unprecedented": 0.127,
+    "plays a crucial role": 0.164,
+    "in the contemporary landscape": 0.24,
+    "underscore": 0.24,
+    "synergy": 0.176,
+    "paradigm shift": 0.176,
+    "transformative": 0.176
+  },
+  "contractionFrequency": {
+    "mean": 0.18,
+    "stddev": 0.94
+  },
+  "passiveVoiceRatio": {
+    "mean": 0,
+    "stddev": 0
+  },
+  "sentenceStarters": {
+    "the": 18.46,
+    "before": 13.94,
+    "what": 10.02,
+    "one": 9.81,
+    "although": 6.57,
+    "to": 6.48,
+    "in": 3.89,
+    "previous": 3.56,
+    "when": 3.52,
+    "there": 3.5,
+    "our": 3.29,
+    "we": 1.09,
+    "it": 0.82,
+    "right": 0.65,
+    "that": 0.62,
+    "a": 0.6,
+    "think": 0.59,
+    "interesting": 0.58,
+    "here": 0.57,
+    "so": 0.57,
+    "simple": 0.55,
+    "nobody": 0.55,
+    "this": 0.54,
+    "wait": 0.51,
+    "let": 0.51,
+    "but": 0.49,
+    "not": 0.47,
+    "hold": 0.47,
+    "furthermore": 0.26
+  },
+  "humanWritingExamples": [
+    "What we found was that stimulus matters way more than receptor in most cases.",
+    "What makes this lattice finding particularly interesting is that it runs counter to the prevailing physics consensus, which holds that state is primarily determined by momentum factors, whereas our data suggests environmental variables play an equally important role.",
+    "What makes this cortex finding particularly interesting is that it runs counter to the prevailing neuroscience consensus, which holds that stimulus is primarily determined by firing factors, whereas our data suggests environmental variables play an equally important role.",
+    "There is a real tension here between revenue accuracy and computational cost.",
+    "Our approach differs because we treat correlation as a dynamic variable rather than a fixed parameter.",
+    "To address this limitation, we developed a new regulation framework that combines institution with institution, and while this increased the computational overhead by roughly thirty percent, the improvement in institution accuracy more than justified the tradeoff in our view.",
+    "The relationship between memory and behavior turned out to be more complex than we initially thought.",
+    "To address this limitation, we developed a new social framework that combines behavior with correlation, and while this increased the computational overhead by roughly thirty percent, the improvement in social accuracy more than justified the tradeoff in our view.",
+    "Our approach differs because we treat pharmacological as a dynamic variable rather than a fixed parameter.",
+    "To summarize, the groundbreaking results underscore the seamless integration of evolution within the contemporary landscape of biology.",
+    "Our approach differs because we treat ocean as a dynamic variable rather than a fixed parameter.",
+    "In practice, most psychology researchers run into this same group problem.",
+    "The data from these habitat experiments paint a somewhat different picture from earlier studies.",
+    "When we ran the diffraction analysis, the deformation values were significantly higher than expected.",
+    "One thing that stood out was how diffraction affected the overall elasticity performance.",
+    "To address this limitation, we developed a new carbon framework that combines sustainability with atmosphere, and while this increased the computational overhead by roughly thirty percent, the improvement in warming accuracy more than justified the tradeoff in our view.",
+    "Our approach differs because we treat polymer as a dynamic variable rather than a fixed parameter.",
+    "There is a real tension here between resilience accuracy and computational cost.",
+    "The relationship between mutation and organism turned out to be more complex than we initially thought.",
+    "What makes this quantum finding particularly interesting is that it runs counter to the prevailing physics consensus, which holds that condensed matter is primarily determined by perturbation factors, whereas our data suggests environmental variables play an equally important role.",
+    "Although the initial simulation results were promising, we noticed that the fabrication performance degraded substantially when we introduced mechanical noise into the system, which suggests that the model is more sensitive to input perturbations than the original paper claimed.",
+    "There is a real tension here between genome accuracy and computational cost.",
+    "When we ran the efficacy analysis, the biomarker values were significantly higher than expected.",
+    "In practice, most neuroscience researchers run into this same circuit problem.",
+    "There is a real tension here between significance accuracy and computational cost.",
+    "The control group showed baseline state levels, which is consistent with prior findings.",
+    "What we found was that generalization matters way more than gradient in most cases.",
+    "Previous work in Psychology has focused mainly on behavior without considering theory.",
+    "To address this limitation, we developed a new pharmacological framework that combines pharmacological with remission, and while this increased the computational overhead by roughly thirty percent, the improvement in diagnosis accuracy more than justified the tradeoff in our view.",
+    "The data from these paradigm experiments paint a somewhat different picture from earlier studies.",
+    "Our approach differs because we treat adaptation as a dynamic variable rather than a fixed parameter.",
+    "Our approach differs because we treat drought as a dynamic variable rather than a fixed parameter.",
+    "Although the initial response results were promising, we noticed that the motor performance degraded substantially when we introduced dopamine noise into the system, which suggests that the model is more sensitive to input perturbations than the original paper claimed.",
+    "To address this limitation, we developed a new series framework that combines proof with series, and while this increased the computational overhead by roughly thirty percent, the improvement in convergence accuracy more than justified the tradeoff in our view.",
+    "The control group showed baseline neuron levels, which is consistent with prior findings.",
+    "But here is the catch.",
+    "Although the initial consumption results were promising, we noticed that the institution performance degraded substantially when we introduced growth noise into the system, which suggests that the model is more sensitive to input perturbations than the original paper claimed.",
+    "One thing that stood out was how thermal affected the overall nanostructure performance.",
+    "What makes this forest finding particularly interesting is that it runs counter to the prevailing environmental science consensus, which holds that carbon is primarily determined by renewable factors, whereas our data suggests environmental variables play an equally important role.",
+    "Although the initial welfare results were promising, we noticed that the firm performance degraded substantially when we introduced investment noise into the system, which suggests that the model is more sensitive to input perturbations than the original paper claimed.",
+    "The data from these genome experiments paint a somewhat different picture from earlier studies.",
+    "To address this limitation, we developed a new signaling framework that combines species with genome, and while this increased the computational overhead by roughly thirty percent, the improvement in regulation accuracy more than justified the tradeoff in our view.",
+    "Our approach differs because we treat prototype as a dynamic variable rather than a fixed parameter.",
+    "The relationship between ecosystem and adaptation turned out to be more complex than we initially thought.",
+    "In practice, most psychology researchers run into this same correlation problem.",
+    "Our approach differs because we treat membrane as a dynamic variable rather than a fixed parameter.",
+    "In practice, most psychology researchers run into this same emotion problem.",
+    "The control group showed baseline warming levels, which is consistent with prior findings.",
+    "What makes this response finding particularly interesting is that it runs counter to the prevailing neuroscience consensus, which holds that prefrontal is primarily determined by circuit factors, whereas our data suggests environmental variables play an equally important role.",
+    "To address this limitation, we developed a new embedding framework that combines optimization with deep learning, and while this increased the computational overhead by roughly thirty percent, the improvement in dataset accuracy more than justified the tradeoff in our view."
+  ],
+  "punctuation": {
+    "emDashPer1000": {
+      "mean": 11.75,
+      "stddev": 4.27
+    },
+    "semicolonPer1000": {
+      "mean": 0,
+      "stddev": 0
+    },
+    "exclamationPer1000": {
+      "mean": 0,
+      "stddev": 0
+    }
+  }
+}
