@@ -1,6 +1,6 @@
 {
   "name": "stealthhumanizer",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "engines": {
     "node": ">=20"
@@ -44,5 +44,22 @@
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"
-  }
+  },
+  "description": "Free open-source AI text humanizer with corpus-trained engine",
+  "license": "MIT",
+  "author": "Rudra Sarker <rudrasarker130@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rudra496/StealthHumanizer"
+  },
+  "homepage": "https://stealthhumanizer.vercel.app/",
+  "keywords": [
+    "ai-humanizer",
+    "ai-detector",
+    "text-rewriter",
+    "corpus-trained",
+    "academic-writing",
+    "nextjs",
+    "open-source"
+  ]
 }

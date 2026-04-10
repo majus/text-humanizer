@@ -1,30 +1,37 @@
 # Roadmap
 
-This roadmap reflects safe, incremental improvements that preserve existing behavior while improving developer and user experience.
+This roadmap reflects incremental improvements that preserve existing behavior
+while enhancing the corpus-trained humanization engine and overall user
+experience.
 
-## Current Focus (v1.x stabilization)
+## Current Focus (v2.1+ corpus engine)
 
-- Harden documentation and onboarding quality.
-- Maintain a reliable CI/CD baseline for lint/build/test/docs.
-- Improve contributor throughput with better templates and governance.
-- Keep release management predictable with changelog-driven tags.
+- Validate corpus-trained engine against real-world AI detectors (GPTZero,
+  Originality, Turnitin).
+- Expand corpus coverage with additional academic domains and publication years.
+- Fine-tune collocation database based on detector feedback loops.
+- Improve post-processing pipeline for edge-case phrase patterns.
 
 ## Near-Term
 
-- Expand integration checks for provider-specific edge cases.
-- Increase detector quality validation coverage and reproducibility docs.
-- Improve docs examples for common provider and prompt strategies.
+- Add automated detector benchmarking suite with published score reports.
+- Support domain auto-detection from input text to select matching corpus
+  statistics.
+- Optimize corpus-style-model.json size for faster client-side loading.
+- Improve docs with corpus engine technical deep-dives.
 
 ## Mid-Term
 
-- Add optional benchmarking dashboards from generated manifest data.
-- Improve release artifact metadata and automated release note generation.
+- Optional hosted API layer for programmatic access.
+- User feedback loop to continuously refine corpus thresholds.
+- Per-domain calibration profiles for specialized writing contexts.
 - Expand static analysis and docs lint quality gates.
 
 ## Long-Term
 
-- Additional developer tooling for profiling and benchmark comparisons.
-- Optional hosted API layer guidance for teams that need centralized controls.
+- Multilingual corpus support (beyond English).
+- Browser extension for in-page humanization.
+- Mobile companion app.
 - Internationalization of user-facing docs and onboarding.
 
 ## Contribution Alignment

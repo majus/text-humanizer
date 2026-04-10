@@ -4,14 +4,19 @@
 [![Docs](https://github.com/rudra496/StealthHumanizer/actions/workflows/pages.yml/badge.svg)](https://github.com/rudra496/StealthHumanizer/actions/workflows/pages.yml)
 [![Release](https://img.shields.io/github/v/release/rudra496/StealthHumanizer?sort=semver)](https://github.com/rudra496/StealthHumanizer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![Deploy](https://img.shields.io/badge/Vercel-Live-black?logo=vercel)](https://stealthhumanizer.vercel.app/)
 
-StealthHumanizer is an open-source web application for rewriting AI-generated text into more human-like writing with configurable tone, style, and rewrite intensity, plus an integrated detection and readability analysis layer.
+> 🥷 Free, open-source AI text humanizer — corpus-trained on 10,000 Q1 academic
+> papers. 13 AI providers, 4 rewrite levels, multi-pass ninja mode. No login, no
+> limits, 100% client-side.
 
-**Docs site:** https://rudra496.github.io/StealthHumanizer/
+**Live app:** https://stealthhumanizer.vercel.app/ ·
+**Docs:** https://rudra496.github.io/StealthHumanizer/
 
 ## Table of Contents
 
 - [Features](#features)
+- [How It Beats AI Detectors](#how-it-beats-ai-detectors)
 - [Architecture](#architecture)
 - [Installation](#installation)
 - [Quickstart](#quickstart)
@@ -25,24 +30,60 @@ StealthHumanizer is an open-source web application for rewriting AI-generated te
 
 ## Features
 
-- Multi-provider generation pipeline with support for free and paid model providers.
-- Multiple rewrite levels (including multi-pass modes) to control transformation strength.
-- Preset writing styles and tone controls for output targeting.
-- Built-in detector with multiple heuristics and readability scoring.
-- Side-by-side workflow for source text, transformed output, and quality feedback.
-- Browser-first key handling to keep user API keys local to the client.
+- **Corpus-trained humanization engine** built from 10,000 Q1 open-access
+  academic papers spanning 11 domains (2018–2025).
+- **Dynamic detection thresholds** calibrated against real human writing patterns,
+  not guesswork — sentence length, burstiness, vocabulary diversity, and
+  transition frequency.
+- **Expanded AI phrase database** with 150+ collocation replacements for natural
+  output.
+- **Domain-aware style matching** across 11 academic disciplines.
+- **13 AI provider support** with configurable API keys (free and paid).
+- **4 rewrite levels** including multi-pass ninja mode for maximum transformation.
+- **13 preset writing tones** and granular style controls.
+- **Integrated AI detection** with corpus-calibrated heuristic scoring.
+- **Readability analysis** (Flesch-Kincaid, Gunning Fog).
+- **PDF and DOCX file upload** support.
+- **Grammar check** integration.
+- **Multi-language humanization** support.
+- **Side-by-side workflow** for source, output, and quality feedback.
+- **Browser-first key handling** — all API keys stay on your device.
+- **Dark/light theme** toggle.
+
+## How It Beats AI Detectors
+
+StealthHumanizer uses a multi-layer approach grounded in real data, not heuristics:
+
+1. **LLM rewrite** — your chosen provider transforms the text using a
+   corpus-aware prompt injected with statistical targets from 10,000 real Q1
+   papers.
+2. **Corpus-aware post-processing** — an expanded collocation engine replaces
+   150+ known AI-signature phrases with natural alternatives.
+3. **Detection calibration** — the built-in detector scores output against
+   dynamic thresholds derived from real human writing (sentence length mean 20.5,
+   burstiness 0.426, vocabulary diversity 69.4%, passive voice 18.1%).
+
+The result is text that doesn't just *avoid* AI patterns — it *matches* human
+writing patterns measured from actual published research.
 
 ## Architecture
 
 High-level architecture:
 
-1. **UI layer (`components/`, `app/page.tsx`)** handles text entry, settings, and result rendering.
-2. **API routes (`app/api/`)** orchestrate provider calls and rewrite workflows.
-3. **Core logic (`lib/`)** provides prompt construction, provider abstraction, detector scoring, and storage helpers.
-4. **Research and evaluation scripts (`scripts/`, `data/`)** support benchmark and training smoke pipelines.
-5. **Documentation (`docs/`)** provides user and contributor guides published through GitHub Pages.
+1. **UI layer (`components/`, `app/page.tsx`)** — text entry, settings, and
+   result rendering.
+2. **API routes (`app/api/`)** — provider orchestration and rewrite workflows.
+3. **Style model layer (`public/corpus-style-model.json`)** — corpus statistics
+   and calibrated thresholds loaded client-side from 10,000 Q1 papers.
+4. **Core logic (`lib/`)** — prompt construction (with corpus-aware injection),
+   provider abstraction, detector scoring, and storage helpers.
+5. **Research and evaluation scripts (`scripts/`, `data/`)** — benchmark,
+   training, and corpus ingestion pipelines.
+6. **Documentation (`docs/`)** — user and contributor guides published via
+   GitHub Pages.
 
-For deeper technical details, see [ARCHITECTURE.md](./ARCHITECTURE.md) and [STYLE_ENGINE.md](./STYLE_ENGINE.md).
+For deeper technical details, see [ARCHITECTURE.md](./ARCHITECTURE.md) and
+[STYLE_ENGINE.md](./STYLE_ENGINE.md).
 
 ## Installation
 
@@ -67,15 +108,18 @@ Run the application locally:
 npm run dev
 ```
 
-Then open `http://localhost:3000`, add a provider API key in settings, and run a rewrite.
+Then open `http://localhost:3000`, add a provider API key in settings, and run a
+rewrite.
 
 ## Configuration
 
-StealthHumanizer is configured primarily through UI controls and local browser storage.
+StealthHumanizer is configured primarily through UI controls and local browser
+storage.
 
 - **Provider keys:** configured in app settings and stored locally.
 - **Rewrite strategy:** choose level, style, tone, and target score.
-- **Research pipeline scripts:** use JSON configs under `data/papers/*.config.example.json` and `data/models/*.config.example.json`.
+- **Research pipeline scripts:** use JSON configs under
+  `data/papers/*.config.example.json` and `data/models/*.config.example.json`.
 
 See [docs/configuration.md](./docs/configuration.md) for full details.
 
@@ -88,10 +132,7 @@ See [docs/configuration.md](./docs/configuration.md) for full details.
 3. Run humanization.
 4. Review detector/readability scores and iterate.
 
-
-### One-command legal corpus + training bootstrap (ready-made)
-
-For a complete local run (install + ingest + benchmark + train + eval) using the built-in open-access/Q1-oriented configs:
+### One-command corpus + training bootstrap
 
 ```bash
 npm run pipeline:q1-ready
@@ -109,10 +150,6 @@ The wrapper (`scripts/papers/complete-ready-pipeline.mjs`) runs:
 2. `node scripts/papers/batch-download-and-train.mjs` with Q1 OA configs
 3. `node scripts/model/evaluate-framework.mjs --manifest data/models/current/run.manifest.json`
 
-If ingestion fails due to provider/network limits, the batch stage falls back to a small bundled open-source seed set so the full pipeline can still complete.
-
-For very large corpora (for example, ~10k papers), keep PDFs/fulltext artifacts in object storage and track only configs/manifests in Git.
-
 ### Scripted benchmark/training smoke flow
 
 ```bash
@@ -123,23 +160,15 @@ npm run model:eval -- --manifest data/models/current/run.manifest.json
 
 ## Testing and Local Development
 
-Common commands:
-
 ```bash
 npm run lint
 npm run test:integration
 npm run build
 ```
 
-Notes:
-
-- `npm run test:integration` expects generated benchmark/model manifests.
-
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for workflow standards.
 
 ## Benchmarks and Performance
-
-Benchmark and analysis documentation:
 
 - [docs/BENCHMARK_METHODOLOGY.md](./docs/BENCHMARK_METHODOLOGY.md)
 - [docs/HUMAN_AI_SIGNAL_LAYER.md](./docs/HUMAN_AI_SIGNAL_LAYER.md)
@@ -151,13 +180,19 @@ See [ROADMAP.md](./ROADMAP.md) for release milestones and planned improvements.
 
 ## Contributing
 
-Contributions are welcome. Please review [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+Contributions are welcome. Please review [CONTRIBUTING.md](./CONTRIBUTING.md)
+before opening a pull request.
 
 ## 👨‍💻 Author
 
-**Rudra Sarker** — 3rd-year IPE student at SUST, Bangladesh. Building open-source tools for accessibility, education, and developer productivity.
+**Rudra Sarker** — 3rd-year IPE student at SUST, Bangladesh. Building open-source
+tools for accessibility, education, and developer productivity.
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-rudra496-blue?logo=github)](https://rudra496.github.io/site) [![GitHub](https://img.shields.io/badge/GitHub-rudra496-181717?logo=github)](https://github.com/rudra496) [![LinkedIn](https://img.shields.io/badge/LinkedIn-Rudra_Sarker-0A66C2?logo=linkedin)](https://www.linkedin.com/in/rudrasarker) [![Twitter/X](https://img.shields.io/badge/X-@Rudra496-000?logo=x)](https://x.com/Rudra496)
+[![Portfolio](https://img.shields.io/badge/Portfolio-rudra496-blue?logo=github)](https://rudra496.github.io/site)
+[![GitHub](https://img.shields.io/badge/GitHub-rudra496-181717?logo=github)](https://github.com/rudra496)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Rudra_Sarker-0A66C2?logo=linkedin)](https://www.linkedin.com/in/rudrasarker)
+[![X/Twitter](https://img.shields.io/badge/X-@Rudra496-000?logo=x)](https://x.com/Rudra496)
+[![DevPost](https://img.shields.io/badge/DevPost-rudrasarker-003E54?logo=devpost)](https://devpost.com/rudrasarker)
 
 ## Security, Support, and License
 

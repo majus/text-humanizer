@@ -2,6 +2,16 @@
 
 Welcome to the official documentation for StealthHumanizer.
 
+## What's New in v2.1
+
+StealthHumanizer v2.1 introduces the **corpus-trained humanization engine** —
+built from 10,000 Q1 open-access academic papers. The engine uses real human
+writing statistics (sentence length, burstiness, vocabulary diversity, transition
+frequency) to calibrate rewrite prompts and detection thresholds dynamically.
+
+See [STYLE_ENGINE.md](./STYLE_ENGINE.md) and
+[HUMAN_AI_SIGNAL_LAYER.md](./HUMAN_AI_SIGNAL_LAYER.md) for technical details.
+
 ## Start Here
 
 - [Getting Started](./getting-started.md)
@@ -13,10 +23,11 @@ Welcome to the official documentation for StealthHumanizer.
 
 ## What StealthHumanizer Provides
 
-- Humanization workflows with adjustable rewrite controls
-- Multi-provider support for text generation backends
-- Built-in detection and readability feedback
-- Reproducible benchmark and model-evaluation script pipeline
+- Humanization workflows with adjustable rewrite controls and corpus-aware
+  style matching.
+- Multi-provider support for text generation backends (13 providers).
+- Built-in detection and readability feedback with dynamic calibrated thresholds.
+- Reproducible benchmark and model-evaluation script pipeline.
 
 ## Additional Technical Guides
 

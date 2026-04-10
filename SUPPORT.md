@@ -2,9 +2,10 @@
 
 ## Get Help
 
+- **Live app:** https://stealthhumanizer.vercel.app/
+- **Documentation:** https://rudra496.github.io/StealthHumanizer/
 - Open a question/discussion in GitHub Discussions (if enabled).
 - Use GitHub Issues for confirmed bugs and feature requests.
-- Review project docs first: https://rudra496.github.io/StealthHumanizer/
 
 ## Before Requesting Support
 
@@ -18,8 +19,10 @@ Please include:
 
 ## Security Issues
 
-For vulnerabilities, follow [SECURITY.md](./SECURITY.md) and avoid public disclosure.
+For vulnerabilities, follow [SECURITY.md](./SECURITY.md) and avoid public
+disclosure.
 
 ## Maintainer Response Expectations
 
-Maintainer response time is best-effort and can vary by workload. Community contributions and reproductions are welcome.
+Maintainer response time is best-effort and can vary by workload. Community
+contributions and reproductions are welcome and help accelerate resolution.
