@@ -2,9 +2,8 @@
  * Style Model — Loads corpus style statistics and provides calibrated
  * constraints for the humanizer engine.
  *
- * Server-only module: file I/O uses dynamic require that webpack/Next.js
- * cannot statically analyze, preventing Node.js built-ins from leaking
- * into client bundles.
+ * Client-safe: loads the model via fetch() from the public directory.
+ * Falls back to Node.js fs on the server side if the public file isn't available.
  */
 
 // ==================== TYPES ====================
@@ -95,76 +94,101 @@ export interface CalibratedThresholds {
 // ==================== LOADING ====================
 
 let cachedModel: CorpusStyleModel | null = null;
+let fetchPromise: Promise<CorpusStyleModel | null> | null = null;
 
-/** Check if we're in a Node.js environment */
-function isNode(): boolean {
-  return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-}
-
-/** Dynamically require a Node.js built-in — webpack cannot statically analyze this. */
-function nodeRequire(mod: string): unknown {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
-  const _r = new Function('mod', 'return require(mod)');
-  return _r(mod);
-}
-
-export function loadStyleModel(modelPath?: string): CorpusStyleModel | null {
+/**
+ * Load the style model. Safe to call from both client and server.
+ *
+ * - Client/browser: fetches from /corpus-style-model.json (public dir)
+ * - Server/SSR: reads from data/models/corpus-style-model.json via fs
+ *
+ * Results are cached after first load.
+ */
+export async function loadStyleModelAsync(): Promise<CorpusStyleModel | null> {
   if (cachedModel) return cachedModel;
-  if (!isNode()) return null;
+  if (fetchPromise) return fetchPromise;
 
-  let fs: { readFileSync: (p: string, e: string) => string; existsSync: (p: string) => boolean };
-  let pathMod: { resolve: (...parts: string[]) => string };
-
-  try {
-    fs = nodeRequire('node:fs') as typeof fs;
-    pathMod = nodeRequire('node:path') as typeof pathMod;
-  } catch {
-    return null;
-  }
-
-  const base = __dirname;
-  const paths = [
-    modelPath,
-    pathMod.resolve('data/models/corpus-style-model.json'),
-    pathMod.resolve('../data/models/corpus-style-model.json'),
-    pathMod.resolve(base, '../../data/models/corpus-style-model.json'),
-  ].filter(Boolean);
-
-  for (const p of paths) {
+  fetchPromise = (async () => {
+    // Strategy 1: Fetch from public directory (works in browser + server)
     try {
-      if (fs.existsSync(p!)) {
-        const raw = fs.readFileSync(p!, 'utf-8');
-        cachedModel = JSON.parse(raw) as CorpusStyleModel;
+      const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const res = await fetch(`${baseUrl}/corpus-style-model.json`);
+      if (res.ok) {
+        cachedModel = await res.json();
         return cachedModel;
       }
     } catch {
-      // try next
+      // fetch failed, try fs
     }
-  }
 
-  return null;
+    // Strategy 2: Node.js fs (server-only, build-time, scripts)
+    try {
+      // Dynamic import that bundlers won't statically analyze
+      const mod = await Function('return import("node:fs")')() as typeof import('node:fs');
+      const pathMod = await Function('return import("node:path")')() as typeof import('node:path');
+      const candidates = [
+        pathMod.resolve('data/models/corpus-style-model.json'),
+        pathMod.resolve(__dirname, '../../data/models/corpus-style-model.json'),
+      ];
+      for (const p of candidates) {
+        if (mod.existsSync(p)) {
+          const raw = mod.readFileSync(p, 'utf-8');
+          cachedModel = JSON.parse(raw);
+          return cachedModel;
+        }
+      }
+    } catch {
+      // not in Node.js
+    }
+
+    return null;
+  })();
+
+  return fetchPromise;
+}
+
+/**
+ * Synchronous load — only works on the server.
+ * Returns null on client (use loadStyleModelAsync instead).
+ */
+export function loadStyleModel(): CorpusStyleModel | null {
+  return cachedModel;
+}
+
+/** Set the model manually (e.g., from an API route that preloads it). */
+export function setStyleModel(model: CorpusStyleModel | null): void {
+  cachedModel = model;
+  fetchPromise = null;
+}
+
+/** Whether the model has been loaded (sync check). */
+export function hasStyleModel(): boolean {
+  return cachedModel !== null;
 }
 
 // ==================== STYLE CONSTRAINTS ====================
 
 /**
  * Get style constraints for a given domain (or global defaults).
+ * Returns defaults if no model is loaded yet.
  */
-export function getStyleConstraints(domain?: string): StyleConstraints {
-  const model = loadStyleModel();
-  if (!model) {
+export function getStyleConstraints(domain?: string, model?: CorpusStyleModel | null): StyleConstraints {
+  const m = model ?? cachedModel;
+  if (!m) {
     return getDefaultConstraints();
   }
 
-  const domainData = domain && model.byDomain[domain]
-    ? model.byDomain[domain]
+  const domainData = domain && m.byDomain[domain]
+    ? m.byDomain[domain]
     : null;
 
-  const slDist = model.sentenceLengthDistribution;
-  const burst = model.burstinessProfile;
-  const vocab = model.vocabularyDiversityRange;
+  const slDist = m.sentenceLengthDistribution;
+  const burst = m.burstinessProfile;
+  const vocab = m.vocabularyDiversityRange;
 
-  const totalTransitions = Object.values(model.transitionWordFrequency)
+  const totalTransitions = Object.values(m.transitionWordFrequency)
     .reduce((sum, v) => sum + v, 0);
 
   return {
@@ -176,10 +200,10 @@ export function getStyleConstraints(domain?: string): StyleConstraints {
     burstinessTarget: domainData?.burstinessMean ?? burst.mean,
     vocabularyDiversityTarget: domainData?.vocabularyDiversityMean ?? vocab.mean,
     transitionWordBudget: totalTransitions,
-    contractionTarget: model.contractionFrequency.mean,
-    passiveVoiceTarget: domainData?.passiveVoiceMean ?? model.passiveVoiceRatio.mean,
-    firstPersonPronounTarget: model.global.avgFirstPersonPronouns,
-    hedgingBudget: model.global.avgHedgingFrequency,
+    contractionTarget: m.contractionFrequency.mean,
+    passiveVoiceTarget: domainData?.passiveVoiceMean ?? m.passiveVoiceRatio.mean,
+    firstPersonPronounTarget: m.global.avgFirstPersonPronouns,
+    hedgingBudget: m.global.avgHedgingFrequency,
   };
 }
 
@@ -199,21 +223,20 @@ function getDefaultConstraints(): StyleConstraints {
 // ==================== PROMPT BUILDER ====================
 
 /**
- * Build a prompt section that tells the LLM to match corpus-calibrated
- * human writing patterns. These are concrete, measurable instructions.
+ * Build a prompt section with corpus-calibrated style targets.
  */
-export function buildStyleInjectionPrompt(domain?: string): string {
-  const model = loadStyleModel();
-  const constraints = getStyleConstraints(domain);
+export function buildStyleInjectionPrompt(domain?: string, model?: CorpusStyleModel | null): string {
+  const m = model ?? cachedModel;
+  const constraints = getStyleConstraints(domain, m);
 
-  if (!model) {
+  if (!m) {
     return '';
   }
 
   const sl = constraints.sentenceLengthRange;
-  const examples = model.humanWritingExamples.slice(0, 5);
+  const examples = m.humanWritingExamples.slice(0, 5);
 
-  const topStarters = Object.entries(model.sentenceStarters)
+  const topStarters = Object.entries(m.sentenceStarters)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([w]) => w);
@@ -221,7 +244,7 @@ export function buildStyleInjectionPrompt(domain?: string): string {
   return `
 
 === CORPUS-CALIBRATED STYLE TARGETS ===
-Based on analysis of ${model.paperCount.toLocaleString()} published papers, match these exact patterns:
+Based on analysis of ${m.paperCount.toLocaleString()} published papers, match these exact patterns:
 
 1. SENTENCE LENGTH: Average ${sl.idealMean} words. Have sentences as short as ${sl.min} and as long as ${sl.max}. The burstiness coefficient (length variation) should be around ${constraints.burstinessTarget.toFixed(2)}.
 
@@ -245,11 +268,11 @@ ${examples.map((e, i) => `${i + 1}. "${e}"`).join('\n')}
 // ==================== CALIBRATED THRESHOLDS ====================
 
 /**
- * Get detection thresholds calibrated against real human writing from the corpus.
+ * Get detection thresholds calibrated against real human writing.
  */
-export function getCorpusCalibratedThresholds(): CalibratedThresholds {
-  const model = loadStyleModel();
-  if (!model) {
+export function getCorpusCalibratedThresholds(model?: CorpusStyleModel | null): CalibratedThresholds {
+  const m = model ?? cachedModel;
+  if (!m) {
     return {
       humanScoreMin: 50,
       humanScoreMax: 90,
@@ -261,10 +284,10 @@ export function getCorpusCalibratedThresholds(): CalibratedThresholds {
     };
   }
 
-  const burstinessFloor = Math.round(model.burstinessProfile.mean * 50);
-  const vocabularyFloor = Math.round(model.vocabularyDiversityRange.mean * 85);
+  const burstinessFloor = Math.round(m.burstinessProfile.mean * 50);
+  const vocabularyFloor = Math.round(m.vocabularyDiversityRange.mean * 85);
 
-  const totalTransitions = Object.values(model.transitionWordFrequency)
+  const totalTransitions = Object.values(m.transitionWordFrequency)
     .reduce((sum, v) => sum + v, 0);
   const transitionCeiling = Math.round(totalTransitions * 200);
 
@@ -281,12 +304,8 @@ export function getCorpusCalibratedThresholds(): CalibratedThresholds {
 
 // ==================== UTILITY ====================
 
-export function hasStyleModel(): boolean {
-  return loadStyleModel() !== null;
-}
-
 export function getStyleModelInfo(): { loaded: boolean; paperCount?: number; generatedAt?: string } {
-  const model = loadStyleModel();
+  const model = cachedModel;
   if (!model) return { loaded: false };
   return { loaded: true, paperCount: model.paperCount, generatedAt: model.generatedAt };
 }

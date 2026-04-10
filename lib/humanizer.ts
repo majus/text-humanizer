@@ -2,7 +2,7 @@
 
 import { HumanizationOptions, HumanizationResult, SentenceResult } from './types';
 import { getSystemPrompt, getRehumanizePrompt, getCorpusAwareSystemPrompt } from './prompts';
-import { getCorpusCalibratedThresholds, hasStyleModel } from './style-model';
+import { getCorpusCalibratedThresholds, hasStyleModel, loadStyleModelAsync } from './style-model';
 import { generateWithProvider, getProvider, generateAlternatives } from './providers';
 import { detectAI } from './detector';
 import { chunkText, countWords, addToHistory } from './storage';
@@ -75,6 +75,8 @@ export async function humanizeText(
   onProgress?: (pass: number, maxPasses: number, message: string) => void
 ): Promise<HumanizationResult> {
   const inputWordCount = countWords(text);
+  // Preload style model (async, no-op if already loaded)
+  await loadStyleModelAsync();
   // Use corpus-calibrated thresholds if available
   const calibratedThresholds = hasStyleModel() ? getCorpusCalibratedThresholds() : null;
   const targetScore = options.targetScore || calibratedThresholds?.targetScore || 80;
