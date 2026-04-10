@@ -608,7 +608,7 @@ function disruptFlow(text: string): string {
     const sentences = splitSentences(p);
     if (sentences.length < 2) return p;
 
-    let result = [...sentences];
+    const result = [...sentences];
 
     // 30% chance: add a short emphasis sentence
     if (chance(0.30) && result.length >= 3) {
