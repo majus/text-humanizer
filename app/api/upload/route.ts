@@ -36,48 +36,38 @@ export async function POST(request: NextRequest) {
 
     if (ext === 'pdf') {
       const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      const uint8 = new Uint8Array(arrayBuffer);
 
-      let pdfParse: any;
-      try {
-        pdfParse = await import('pdf-parse');
-      } catch {
-        return NextResponse.json({ error: 'PDF parsing library not available.' }, { status: 500 });
+      // Use pdfjs-dist directly (pure JS, no native deps — works on Vercel serverless)
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const doc = await pdfjs.getDocument({ data: uint8 }).promise;
+
+      let fullText = '';
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
       }
 
-      // Handle both pdf-parse v1 (default export) and v2 (PDFParse class)
-      let text = '';
-      try {
-        if ('PDFParse' in pdfParse) {
-          const parser = new pdfParse.PDFParse({ data: buffer });
-          try {
-            const result = await parser.getText();
-            text = result.text || '';
-          } finally {
-            await parser.destroy();
-          }
-        } else {
-          const parseFn = pdfParse.default || pdfParse;
-          const result = await parseFn(buffer);
-          text = result.text || '';
-        }
-      } catch {
-        // If class-based fails, try default function
-        try {
-          const parseFn = pdfParse.default || pdfParse;
-          const result = await parseFn(buffer);
-          text = result.text || '';
-        } catch {
-          throw new Error('Could not parse PDF. The file may be corrupted or password-protected.');
-        }
+      if (!fullText.trim()) {
+        return NextResponse.json(
+          { error: 'PDF contains no extractable text. It may be a scanned/image-based PDF.' },
+          { status: 400 }
+        );
       }
 
-      if (!text.trim()) return NextResponse.json({ error: 'PDF contains no extractable text.' }, { status: 400 });
-      return NextResponse.json({ text, name: file.name });
+      return NextResponse.json({ text: fullText.trim(), name: file.name });
     }
 
-    return NextResponse.json({ error: `Unsupported file type: .${ext}. Supported: .txt, .docx, .pdf` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Unsupported file type: .${ext}. Supported: .txt, .docx, .pdf` },
+      { status: 400 }
+    );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to parse file' }, { status: 500 });
+    const msg = err?.message || 'Failed to parse file';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
