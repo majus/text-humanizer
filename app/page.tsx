@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, FileText, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Humanizer from '@/components/Humanizer';
+import BatchHumanizer from '@/components/BatchHumanizer';
 import Detector from '@/components/Detector';
 import History from '@/components/History';
 import Settings from '@/components/Settings';
@@ -160,7 +161,13 @@ export default function Home() {
         </>
       )}
 
-      {activeTab !== 'humanizer' && (
+      {activeTab === 'batch' && (
+        <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
+          <BatchHumanizer showToast={showToast} />
+        </main>
+      )}
+
+      {activeTab !== 'humanizer' && activeTab !== 'batch' && (
         <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
           {activeTab === 'detector' && <Detector showToast={showToast} />}
           {activeTab === 'history' && <History showToast={showToast} setActiveTab={setActiveTab} />}

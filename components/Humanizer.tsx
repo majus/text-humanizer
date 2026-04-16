@@ -5,7 +5,7 @@ import {
   Sparkles, Copy, Download, FileText, RefreshCw, Zap, Eye,
   FileDown, Target, ChevronDown, ChevronUp, Keyboard, ArrowRight,
   Type, Languages, Upload, RotateCcw, CheckCircle, AlertTriangle,
-  X, FileUp
+  X, FileUp, BarChart2, Shield
 } from 'lucide-react';
 import { RewriteLevel, StylePreset, TonePreset, HumanizationResult, ModelProvider } from '@/lib/types';
 import { TONE_CONFIGS, SAMPLE_AI_TEXT, SAMPLE_TECHNICAL_TEXT } from '@/lib/prompts';
@@ -13,6 +13,7 @@ import { detectAI, getScoreColor, getScoreBarColor } from '@/lib/detector';
 import { getReadabilityLabel } from '@/lib/readability';
 import { countWords, downloadAsTxt, downloadAsDocx, getApiKeys } from '@/lib/storage';
 import { PROVIDERS } from '@/lib/providers';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const REWRITE_LEVELS: { id: RewriteLevel; name: string; desc: string }[] = [
   { id: 'light', name: '🪶 Light', desc: 'Subtle fixes' },
@@ -117,6 +118,15 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
   const [selectedChainModels, setSelectedChainModels] = useState<string[]>([]);
   const [pipelineStep, setPipelineStep] = useState('');
   const [preferredModel, setPreferredModel] = useState<ModelProvider>('gemini');
+
+  // GPTZero detection scores (Phase 2)
+  const [gptzeroOriginal, setGptzeroOriginal] = useState<number | null>(null);
+  const [gptzeroHumanized, setGptzeroHumanized] = useState<number | null>(null);
+  const [gptzeroLoading, setGptzeroLoading] = useState(false);
+  const [gptzeroUnavailable, setGptzeroUnavailable] = useState(false);
+
+  // Comparison chart visibility (Phase 4)
+  const [showComparisonChart, setShowComparisonChart] = useState(false);
 
   const wordCount = countWords(inputText);
   const hasAnyApiKey = Object.values(getApiKeys()).some(v => v && v.trim().length > 0);
@@ -470,6 +480,83 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
     setGrammarIssues([]);
     setCorrectedText('');
     showToast('success', 'Grammar corrections applied!');
+  };
+
+  // Phase 2: GPTZero detection
+  const handleGPTZeroDetect = async () => {
+    if (!result) return;
+    setGptzeroLoading(true);
+    setGptzeroUnavailable(false);
+    try {
+      const [origRes, humRes] = await Promise.all([
+        fetch('/api/detect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: inputText }) }),
+        fetch('/api/detect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: result.fullText }) }),
+      ]);
+
+      if (origRes.status === 503 || humRes.status === 503) {
+        setGptzeroUnavailable(true);
+        showToast('warning', 'GPTZero API key not configured. Set GPTZERO_API_KEY to enable.');
+        return;
+      }
+
+      const [origData, humData] = await Promise.all([origRes.json(), humRes.json()]);
+      const origScore = typeof origData.score === 'number' ? Math.round(origData.score * 100) : null;
+      const humScore = typeof humData.score === 'number' ? Math.round(humData.score * 100) : null;
+      setGptzeroOriginal(origScore);
+      setGptzeroHumanized(humScore);
+      showToast('success', 'GPTZero scores loaded!');
+    } catch {
+      showToast('error', 'GPTZero detection failed.');
+    } finally {
+      setGptzeroLoading(false);
+    }
+  };
+
+  // Phase 3: PDF export
+  const handleExportPDF = async () => {
+    if (!result) return;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      const addWrappedText = (text: string, fontSize: number, color: [number, number, number] = [0, 0, 0]) => {
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        doc.text(lines, margin, y);
+        y += lines.length * (fontSize * 0.4) + 4;
+        if (y > 270) { doc.addPage(); y = 20; }
+      };
+
+      addWrappedText('StealthHumanizer — Export', 18, [99, 102, 241]);
+      addWrappedText(new Date().toLocaleString(), 9, [120, 120, 120]);
+      y += 4;
+
+      addWrappedText('Original Text', 13, [60, 60, 60]);
+      addWrappedText(inputText || '(no original text)', 10);
+      y += 4;
+
+      addWrappedText('Humanized Text', 13, [60, 60, 60]);
+      addWrappedText(result.fullText, 10);
+      y += 4;
+
+      const localScore = detection?.score ?? null;
+      if (localScore !== null || gptzeroOriginal !== null || gptzeroHumanized !== null) {
+        addWrappedText('Detection Scores', 13, [60, 60, 60]);
+        if (localScore !== null) addWrappedText(`Local Estimate — Original: AI, Humanized: ~${localScore}% human`, 10);
+        if (gptzeroOriginal !== null) addWrappedText(`GPTZero — Original: ${gptzeroOriginal}% AI probability`, 10);
+        if (gptzeroHumanized !== null) addWrappedText(`GPTZero — Humanized: ${gptzeroHumanized}% AI probability`, 10);
+      }
+
+      doc.save('stealthhumanizer-export.pdf');
+      showToast('success', 'PDF exported!');
+    } catch {
+      showToast('error', 'PDF export failed.');
+    }
   };
 
   const getHighlightedText = (fullText: string, sentences: any[]) => {
@@ -901,6 +988,21 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
                 <CheckCircle className={`w-4 h-4 ${grammarChecking ? 'animate-spin' : ''}`} />
                 {grammarChecking ? 'Checking...' : '📝 Grammar Check'}
               </button>
+              <button onClick={handleGPTZeroDetect} disabled={gptzeroLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <Shield className={`w-4 h-4 ${gptzeroLoading ? 'animate-pulse' : ''}`} />
+                {gptzeroLoading ? 'Scoring...' : '🔍 GPTZero Scores'}
+              </button>
+              <button onClick={handleExportPDF}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">
+                <Download className="w-4 h-4" />
+                📄 Export PDF
+              </button>
+              <button onClick={() => setShowComparisonChart(!showComparisonChart)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors">
+                <BarChart2 className="w-4 h-4" />
+                📊 Chart
+              </button>
             </div>
           </div>
         )}
@@ -971,6 +1073,61 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
             </div>
           </div>
           <p className="text-xs text-dark-500 mt-3">⚡ Estimated score — real detectors (QuillBot, GPTZero, ZeroGPT) may differ. Ninja level + Character Shield gives best external results.</p>
+        </div>
+      )}
+
+      {/* Phase 2: GPTZero before/after scores */}
+      {result && (gptzeroOriginal !== null || gptzeroHumanized !== null || gptzeroUnavailable) && (
+        <div className="bg-dark-800/50 border border-purple-500/30 rounded-xl p-4 animate-fade-in">
+          <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-purple-400" /> GPTZero Detection — Before vs After
+          </h3>
+          {gptzeroUnavailable ? (
+            <p className="text-sm text-yellow-400">⚠️ GPTZero API key not configured. Set <code className="bg-dark-700 px-1 rounded text-xs">GPTZERO_API_KEY</code> in your environment to enable real detection scoring.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-dark-700/30 rounded-lg p-4 text-center">
+                <p className="text-xs text-dark-400 mb-1">Original (AI probability)</p>
+                <p className={`text-3xl font-bold ${gptzeroOriginal !== null && gptzeroOriginal > 50 ? 'text-red-400' : 'text-green-400'}`}>
+                  {gptzeroOriginal !== null ? `${gptzeroOriginal}%` : '—'}
+                </p>
+                <p className="text-xs text-dark-500 mt-1">Before humanization</p>
+              </div>
+              <div className="bg-dark-700/30 rounded-lg p-4 text-center">
+                <p className="text-xs text-dark-400 mb-1">Humanized (AI probability)</p>
+                <p className={`text-3xl font-bold ${gptzeroHumanized !== null && gptzeroHumanized > 50 ? 'text-red-400' : 'text-green-400'}`}>
+                  {gptzeroHumanized !== null ? `${gptzeroHumanized}%` : '—'}
+                </p>
+                <p className="text-xs text-dark-500 mt-1">After humanization</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phase 4: Comparison chart */}
+      {result && showComparisonChart && (
+        <div className="bg-dark-800/50 border border-green-500/20 rounded-xl p-4 animate-fade-in">
+          <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-green-400" /> Original vs Humanized — Word & Character Comparison
+          </h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={[
+                { name: 'Words', Original: result.wordCount.input, Humanized: result.wordCount.output },
+                { name: 'Characters', Original: inputText.length, Humanized: result.fullText.length },
+                { name: 'Sentences', Original: inputText.split(/[.!?]+/).filter(s => s.trim()).length, Humanized: result.sentences.length },
+              ]}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 8, color: '#fff' }} />
+              <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
+              <Bar dataKey="Original" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Humanized" fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

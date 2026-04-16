@@ -1,0 +1,234 @@
+'use client';
+
+import { useState } from 'react';
+import { Layers, Plus, Trash2, Zap, Copy, AlertTriangle, CheckCircle } from 'lucide-react';
+import { getApiKeys } from '@/lib/storage';
+import { PROVIDERS } from '@/lib/providers';
+import { ModelProvider } from '@/lib/types';
+
+interface BatchItem {
+  id: string;
+  text: string;
+}
+
+interface BatchResult {
+  index: number;
+  input: string;
+  output: string | null;
+  finalScore?: number;
+  error: string | null;
+}
+
+interface BatchHumanizerProps {
+  showToast: (type: 'success' | 'error' | 'info' | 'warning', message: string) => void;
+}
+
+export default function BatchHumanizer({ showToast }: BatchHumanizerProps) {
+  const [items, setItems] = useState<BatchItem[]>(() => [
+    { id: '1', text: '' },
+    { id: '2', text: '' },
+  ]);
+  const [nextId, setNextId] = useState(3);
+  const [results, setResults] = useState<BatchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [model, setModel] = useState<ModelProvider>(PROVIDERS[0]?.id ?? 'gemini');
+  const [level, setLevel] = useState<'light' | 'medium' | 'aggressive' | 'ninja'>('medium');
+
+  const addItem = () => {
+    if (items.length >= 20) { showToast('warning', 'Maximum 20 items allowed.'); return; }
+    setItems(prev => [...prev, { id: String(nextId), text: '' }]);
+    setNextId(prev => prev + 1);
+  };
+
+  const removeItem = (id: string) => {
+    if (items.length <= 1) { showToast('warning', 'At least one item is required.'); return; }
+    setItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const updateItem = (id: string, text: string) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, text } : i));
+  };
+
+  const handleSubmit = async () => {
+    const keys = getApiKeys();
+    const apiKey = keys[model];
+    if (!apiKey) {
+      showToast('error', 'No API key found. Add one in Settings.');
+      return;
+    }
+
+    const nonEmpty = items.filter(i => i.text.trim().length > 0);
+    if (nonEmpty.length === 0) {
+      showToast('warning', 'Enter at least one text to humanize.');
+      return;
+    }
+
+    setLoading(true);
+    setResults([]);
+
+    try {
+      const res = await fetch('/api/humanize-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texts: items.map(i => i.text),
+          level,
+          model,
+          apiKey,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast('error', data.error ?? 'Batch processing failed.');
+        return;
+      }
+
+      setResults(data.results ?? []);
+      showToast('success', `Done! ${data.successCount ?? 0}/${data.count ?? 0} texts processed.`);
+    } catch {
+      showToast('error', 'Network error — please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyAll = () => {
+    const text = results
+      .filter(r => r.output)
+      .map((r, i) => `--- Result ${i + 1} ---\n${r.output}`)
+      .join('\n\n');
+    if (!text) { showToast('warning', 'No results to copy.'); return; }
+    navigator.clipboard.writeText(text).then(() => showToast('success', 'All results copied!'));
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Layers className="w-6 h-6 text-accent-400" /> Batch Humanizer
+          </h2>
+          <p className="text-dark-400 mt-1">Humanize multiple texts at once — up to 20 items</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={model}
+            onChange={e => setModel(e.target.value as ModelProvider)}
+            className="px-3 py-2 rounded-lg bg-dark-800 border border-dark-700/50 text-dark-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+          >
+            {PROVIDERS.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <select
+            value={level}
+            onChange={e => setLevel(e.target.value as typeof level)}
+            className="px-3 py-2 rounded-lg bg-dark-800 border border-dark-700/50 text-dark-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+          >
+            <option value="light">🪶 Light</option>
+            <option value="medium">✨ Medium</option>
+            <option value="aggressive">🔥 Aggressive</option>
+            <option value="ninja">🥷 Ninja</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Input list */}
+      <div className="space-y-3">
+        {items.map((item, idx) => (
+          <div key={item.id} className="flex gap-2 items-start">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-dark-500 font-medium">Text {idx + 1}</span>
+                {results[idx] && results[idx].error === null && (
+                  <span className="text-xs text-green-400 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> {results[idx].finalScore}% human
+                  </span>
+                )}
+                {results[idx] && results[idx].error !== null && (
+                  <span className="text-xs text-red-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Error
+                  </span>
+                )}
+              </div>
+              <textarea
+                value={item.text}
+                onChange={e => updateItem(item.id, e.target.value)}
+                placeholder={`Enter text ${idx + 1} to humanize...`}
+                rows={3}
+                className="w-full p-3 bg-dark-800/50 border border-dark-700/50 rounded-xl text-white placeholder-dark-500 resize-y focus:outline-none focus:ring-2 focus:ring-accent-500/50 text-sm"
+              />
+              {results[idx] && results[idx].output && (
+                <div className="mt-2 p-3 bg-dark-700/30 border border-accent-500/20 rounded-xl">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-accent-400 font-medium">Humanized output</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(results[idx].output!).then(() => showToast('success', 'Copied!'))}
+                      className="text-xs text-dark-400 hover:text-dark-200 flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </button>
+                  </div>
+                  <p className="text-sm text-dark-200">{results[idx].output}</p>
+                </div>
+              )}
+              {results[idx] && results[idx].error !== null && (
+                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                  <p className="text-xs text-red-400">{results[idx].error}</p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => removeItem(item.id)}
+              className="mt-6 p-2 rounded-lg bg-dark-800 hover:bg-red-500/20 hover:text-red-400 text-dark-400 transition-colors"
+              aria-label="Remove item"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <button
+          onClick={addItem}
+          disabled={items.length >= 20}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-dark-300 text-sm disabled:opacity-50 transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Add Text
+        </button>
+
+        <div className="flex gap-2">
+          {results.length > 0 && (
+            <button
+              onClick={copyAll}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 hover:bg-dark-700 text-dark-300 text-sm"
+            >
+              <Copy className="w-4 h-4" /> Copy All
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-semibold shadow-lg shadow-accent-500/25 disabled:opacity-50 transition-all"
+          >
+            {loading ? (
+              <><Zap className="w-5 h-5 animate-pulse" /> Processing...</>
+            ) : (
+              <><Layers className="w-5 h-5" /> Humanize Batch</>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {results.length > 0 && (
+        <div className="bg-dark-800/50 border border-dark-700/50 rounded-xl p-4 text-sm text-dark-300">
+          <span className="font-medium text-white">{results.filter(r => !r.error).length}</span> of{' '}
+          <span className="font-medium text-white">{results.length}</span> texts processed successfully.
+        </div>
+      )}
+    </div>
+  );
+}

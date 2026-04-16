@@ -191,4 +191,4 @@ export interface Toast {
   message: string;
 }
 
-export type Tab = 'humanizer' | 'detector' | 'enhance' | 'history' | 'settings';
+export type Tab = 'humanizer' | 'batch' | 'detector' | 'enhance' | 'history' | 'settings';
