@@ -1,6 +1,6 @@
 'use client';
 
-import { PenTool, Search, History, Settings, Sun, Moon } from 'lucide-react';
+import { PenTool, Search, History, Settings, Sun, Moon, Layers } from 'lucide-react';
 import type { Tab } from '@/lib/types';
 
 interface NavbarProps {
@@ -12,6 +12,7 @@ interface NavbarProps {
 
 const tabs: { id: Tab; label: string; icon: typeof PenTool }[] = [
   { id: 'humanizer', label: 'Humanizer', icon: PenTool },
+  { id: 'batch', label: 'Batch', icon: Layers },
   { id: 'detector', label: 'Detector', icon: Search },
   { id: 'history', label: 'History', icon: History },
   { id: 'settings', label: 'Settings', icon: Settings },
