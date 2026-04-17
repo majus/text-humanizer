@@ -106,7 +106,7 @@ export default function BatchHumanizer({ showToast }: BatchHumanizerProps) {
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.json(); const data = raw.data ?? raw;
       if (!res.ok) {
         showToast('error', data.error ?? 'Batch processing failed.');
         // Reset all statuses to error
@@ -185,7 +185,7 @@ export default function BatchHumanizer({ showToast }: BatchHumanizerProps) {
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.json(); const data = raw.data ?? raw;
       if (!res.ok) {
         showToast('error', data.error ?? 'Retry failed.');
         return;

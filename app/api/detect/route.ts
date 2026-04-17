@@ -6,14 +6,18 @@ export async function POST(request: NextRequest) {
     const { text } = await request.json();
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return NextResponse.json({ error: 'text is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'text is required' }, { status: 400 });
+    }
+
+    if (text.length > 50000) {
+      return NextResponse.json({ success: false, error: 'Text exceeds 50,000 character limit' }, { status: 400 });
     }
 
     const result = await detectWithGPTZero(text);
-    return NextResponse.json(result);
+    return NextResponse.json({ success: true, data: result });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error';
     const status = message.includes('API key') ? 503 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

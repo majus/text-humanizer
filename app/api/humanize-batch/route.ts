@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = checkRateLimit(ip);
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
+        { success: false, error: 'Rate limit exceeded. Please try again later.' },
         { status: 429, headers: { 'X-RateLimit-Remaining': String(rateLimit.remaining) } },
       );
     }
@@ -26,21 +26,20 @@ export async function POST(request: NextRequest) {
     const { texts, level = 'medium', style = 'humanize', tone = 'conversational', model, apiKey } = body;
 
     if (!model || !apiKey) {
-      return NextResponse.json({ error: 'Missing required fields: model and apiKey' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing required fields: model and apiKey' }, { status: 400 });
     }
 
     if (!Array.isArray(texts) || texts.length === 0) {
-      return NextResponse.json({ error: 'texts must be a non-empty array' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'texts must be a non-empty array' }, { status: 400 });
     }
 
     if (texts.length > MAX_BATCH_COUNT) {
-      return NextResponse.json({ error: `Batch exceeds maximum of ${MAX_BATCH_COUNT} items` }, { status: 400 });
+      return NextResponse.json({ success: false, error: `Batch exceeds maximum of ${MAX_BATCH_COUNT} items` }, { status: 400 });
     }
 
     const params = LEVEL_PARAMS[level as RewriteLevel] ?? LEVEL_PARAMS['medium'];
     const systemPrompt = getSystemPrompt(level, style, tone);
 
-    // Use concurrency-limited batch processing (max 3 parallel)
     const results = await asyncMapConcurrent(
       texts,
       async (text: unknown, index: number) => {
@@ -67,9 +66,9 @@ export async function POST(request: NextRequest) {
     );
 
     const successCount = results.filter(r => r.error === null).length;
-    return NextResponse.json({ results, count: results.length, successCount });
+    return NextResponse.json({ success: true, data: { results, count: results.length, successCount } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

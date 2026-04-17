@@ -13,7 +13,12 @@ import { detectAI, getScoreColor, getScoreBarColor } from '@/lib/detector';
 import { getReadabilityLabel } from '@/lib/readability';
 import { countWords, downloadAsTxt, downloadAsDocx, getApiKeys } from '@/lib/storage';
 import { PROVIDERS } from '@/lib/providers';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+
+const ComparisonChart = dynamic(
+  () => import('./ComparisonChart'),
+  { ssr: false, loading: () => <div className="h-[220px] bg-dark-800/50 rounded-xl animate-pulse" /> },
+);
 
 const REWRITE_LEVELS: { id: RewriteLevel; name: string; desc: string }[] = [
   { id: 'light', name: '🪶 Light', desc: 'Subtle fixes' },
@@ -259,9 +264,10 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
       formData.append('file', file);
       const resp = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!resp.ok) { const err = await resp.json(); throw new Error(err.error || 'Upload failed'); }
-      const data = await resp.json();
+      const raw = await resp.json();
+      const data = raw.data ?? raw;
       setInputText(data.text);
-      showToast('success', `Loaded ${file.name} (${countWords(data.text)} words)`);
+      showToast('success', `Loaded ${data.name || file.name} (${countWords(data.text)} words)`);
     } catch (err: any) {
       showToast('error', err.message || 'Failed to upload file');
     } finally {
@@ -500,8 +506,11 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
       }
 
       const [origData, humData] = await Promise.all([origRes.json(), humRes.json()]);
-      const origScore = typeof origData.score === 'number' ? Math.round(origData.score * 100) : null;
-      const humScore = typeof humData.score === 'number' ? Math.round(humData.score * 100) : null;
+      // Handle both old and new response formats
+      const origPayload = origData.data ?? origData;
+      const humPayload = humData.data ?? humData;
+      const origScore = typeof origPayload.score === 'number' ? Math.round(origPayload.score * 100) : null;
+      const humScore = typeof humPayload.score === 'number' ? Math.round(humPayload.score * 100) : null;
       setGptzeroOriginal(origScore);
       setGptzeroHumanized(humScore);
       showToast('success', 'GPTZero scores loaded!');
@@ -516,43 +525,18 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
   const handleExportPDF = async () => {
     if (!result) return;
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      let y = 20;
-
-      const addWrappedText = (text: string, fontSize: number, color: [number, number, number] = [0, 0, 0]) => {
-        doc.setFontSize(fontSize);
-        doc.setTextColor(...color);
-        const lines = doc.splitTextToSize(text, maxWidth);
-        doc.text(lines, margin, y);
-        y += lines.length * (fontSize * 0.4) + 4;
-        if (y > 270) { doc.addPage(); y = 20; }
-      };
-
-      addWrappedText('StealthHumanizer — Export', 18, [99, 102, 241]);
-      addWrappedText(new Date().toLocaleString(), 9, [120, 120, 120]);
-      y += 4;
-
-      addWrappedText('Original Text', 13, [60, 60, 60]);
-      addWrappedText(inputText || '(no original text)', 10);
-      y += 4;
-
-      addWrappedText('Humanized Text', 13, [60, 60, 60]);
-      addWrappedText(result.fullText, 10);
-      y += 4;
-
-      const localScore = detection?.score ?? null;
-      if (localScore !== null || gptzeroOriginal !== null || gptzeroHumanized !== null) {
-        addWrappedText('Detection Scores', 13, [60, 60, 60]);
-        if (localScore !== null) addWrappedText(`Local Estimate — Original: AI, Humanized: ~${localScore}% human`, 10);
-        if (gptzeroOriginal !== null) addWrappedText(`GPTZero — Original: ${gptzeroOriginal}% AI probability`, 10);
-        if (gptzeroHumanized !== null) addWrappedText(`GPTZero — Humanized: ${gptzeroHumanized}% AI probability`, 10);
-      }
-
-      doc.save('stealthhumanizer-export.pdf');
+      const { generatePDF } = await import('@/lib/pdf');
+      await generatePDF({
+        title: 'StealthHumanizer — Export',
+        originalText: inputText || '(no original text)',
+        humanizedText: result.fullText,
+        scores: {
+          localScore: detection?.score ?? null,
+          gptzeroOriginal,
+          gptzeroHumanized,
+        },
+        date: new Date().toLocaleString(),
+      });
       showToast('success', 'PDF exported!');
     } catch {
       showToast('error', 'PDF export failed.');
@@ -1111,23 +1095,13 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
           <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-green-400" /> Original vs Humanized — Word & Character Comparison
           </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={[
-                { name: 'Words', Original: result.wordCount.input, Humanized: result.wordCount.output },
-                { name: 'Characters', Original: inputText.length, Humanized: result.fullText.length },
-                { name: 'Sentences', Original: inputText.split(/[.!?]+/).filter(s => s.trim()).length, Humanized: result.sentences.length },
-              ]}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 8, color: '#fff' }} />
-              <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-              <Bar dataKey="Original" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Humanized" fill="#10b981" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <ComparisonChart
+            data={[
+              { name: 'Words', Original: result.wordCount.input, Humanized: result.wordCount.output },
+              { name: 'Characters', Original: inputText.length, Humanized: result.fullText.length },
+              { name: 'Sentences', Original: inputText.split(/[.!?]+/).filter(s => s.trim()).length, Humanized: result.sentences.length },
+            ]}
+          />
         </div>
       )}
 
