@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (ext === 'txt') {
       const text = await file.text();
       if (!text.trim()) return NextResponse.json({ success: false, error: 'File contains no text content.' }, { status: 400 });
-      return NextResponse.json({ success: true, text, name: file.name });
+      return NextResponse.json({ success: true, data: { text, name: file.name } });
     }
 
     if (ext === 'docx') {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(arrayBuffer);
       const result = await mammoth.extractRawText({ buffer });
       if (!result.value.trim()) return NextResponse.json({ success: false, error: 'Document contains no text content.' }, { status: 400 });
-      return NextResponse.json({ success: true, text: result.value, name: file.name });
+      return NextResponse.json({ success: true, data: { text: result.value, name: file.name } });
     }
 
     if (ext === 'pdf') {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ success: true, text: fullText.trim(), name: file.name });
+      return NextResponse.json({ success: true, data: { text: fullText.trim(), name: file.name } });
     }
 
     return NextResponse.json(
