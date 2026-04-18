@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'StealthHumanizer - Free AI Text Humanizer',
-    description: 'Free open-source AI text humanizer. Transform AI-generated text into natural, human-like writing.',,
+    description: 'Free open-source AI text humanizer. Transform AI-generated text into natural, human-like writing.',
     images: [`${SITE_URL}/og-image.png`],
   },
   robots: { index: true, follow: true },
