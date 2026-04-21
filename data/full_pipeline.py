@@ -1,7 +1,7 @@
 import requests
 import re
-import random
 from xml.etree import ElementTree as ET
+from data.pair_generator import adjacent_sentence_pairs, hybrid_pairs
 
 ARXIV_API = "http://export.arxiv.org/api/query"
 
@@ -32,17 +32,6 @@ def split_sentences(text):
     return re.split(r'(?<=[.!?]) +', text)
 
 
-def generate_pairs(sentences):
-    pairs = []
-    for s in sentences:
-        words = s.split()
-        if len(words) > 5:
-            shuffled = words[:]
-            random.shuffle(shuffled)
-            pairs.append(("rewrite: " + s, " ".join(shuffled)))
-    return pairs
-
-
 def build_dataset(query="AI", papers=50):
     xml_data = fetch_arxiv_papers(query, papers)
     texts = extract_text(xml_data)
@@ -51,17 +40,20 @@ def build_dataset(query="AI", papers=50):
     for t in texts:
         cleaned = clean_text(t)
         sentences = split_sentences(cleaned)
-        pairs = generate_pairs(sentences)
-        all_pairs.extend(pairs)
+
+        pairs1 = adjacent_sentence_pairs(sentences)
+        pairs2 = hybrid_pairs(sentences)
+
+        all_pairs.extend(pairs1)
+        all_pairs.extend(pairs2)
 
     return all_pairs
 
 
 if __name__ == "__main__":
     dataset = build_dataset()
-    print(f"Generated {len(dataset)} training pairs")
+    print(f"Generated {len(dataset)} high-quality training pairs")
 
-    # Save
     with open("dataset.txt", "w") as f:
         for inp, out in dataset:
             f.write(inp + "\t" + out + "\n")
