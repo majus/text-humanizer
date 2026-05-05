@@ -104,6 +104,7 @@ export interface HumanizationResult {
 
 export interface DetectionResult {
   score: number;
+  confidenceInterval: { lower: number; upper: number };
   sentences: SentenceDetectionResult[];
   overallVerdict: 'human' | 'ai' | 'mixed';
   analysis: {
@@ -120,6 +121,17 @@ export interface DetectionResult {
     quantifierOveruse: number;
   };
   readability: ReadabilityScores;
+}
+
+export interface DetailedDetectionReport {
+  overallScore: number;
+  confidenceInterval: { lower: number; upper: number };
+  verdict: 'human' | 'ai' | 'mixed';
+  topAiSentences: { text: string; score: number; issues: string[] }[];
+  topHumanSentences: { text: string; score: number; issues: string[] }[];
+  foundAiPhrases: string[];
+  metricsSummary: { name: string; value: number; interpretation: string }[];
+  recommendations: string[];
 }
 
 export interface SentenceDetectionResult {
@@ -192,3 +204,15 @@ export interface Toast {
 }
 
 export type Tab = 'humanizer' | 'batch' | 'detector' | 'enhance' | 'history' | 'settings';
+
+export type TextPurpose =
+  | 'essay' | 'article' | 'blog' | 'email'
+  | 'marketing' | 'report' | 'story' | 'social-media' | 'general';
+
+export interface PurposeConfig {
+  id: TextPurpose;
+  name: string;
+  icon: string;
+  description: string;
+  promptOverlay: string;
+}

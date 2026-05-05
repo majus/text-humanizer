@@ -6,7 +6,7 @@ import { postprocess } from '@/lib/postprocess';
 
 export async function POST(request: NextRequest) {
   try {
-    const { flaggedSentences, level, style, tone, customTone, model, apiKey, fullText } = await request.json();
+    const { flaggedSentences, level, style, tone, customTone, model, apiKey, fullText, purpose } = await request.json();
     if (!flaggedSentences?.length || !model || !apiKey) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const providerInfo = getProvider(model);
     const modelId = providerInfo?.defaultModel || model;
 
-    const rehumanizePrompt = getRehumanizePrompt(flaggedSentences, level || 'aggressive', style || 'humanize', tone || 'conversational', customTone);
+    const rehumanizePrompt = getRehumanizePrompt(flaggedSentences, level || 'aggressive', style || 'humanize', tone || 'conversational', customTone, purpose);
     
     const result = await generateWithProvider(model, apiKey, rehumanizePrompt, '', { model: modelId, temperature: 1.0 });
     const rehumanized = result
@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
           replacementIdx++;
         }
       }
-      const processedText = postprocess(newText);
+      const processedText = postprocess(newText, { style: (style || 'humanize') as any });
       return NextResponse.json({ success: true, rehumanizedSentences: rehumanized, fullText: processedText });
     }
 
-    return NextResponse.json({ success: true, rehumanizedSentences: rehumanized, fullText: postprocess(rehumanized.join(' ')) });
+    return NextResponse.json({ success: true, rehumanizedSentences: rehumanized, fullText: postprocess(rehumanized.join(' '), { style: (style || 'humanize') as any }) });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message || 'Internal error' }, { status: 500 });
   }

@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
     const {
       text, level, style, tone, customTone, model, apiKey,
       targetScore, language, writingSample,
+      purpose,
       // New pipeline parameters
       postprocess: enablePostprocess = true,
-      characterShield: enableCharShield = false,
       chainModels: chainModelIds = [],
       apiKeys: extraApiKeys = {},
       batchTexts = [],
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
 
     const params = LEVEL_PARAMS[level as RewriteLevel];
     const systemPrompt = useCorpus
-      ? getCorpusAwareSystemPrompt(level, style, tone, customTone, writingSample, undefined, language)
-      : getSystemPrompt(level, style, tone, customTone, writingSample, language);
+      ? getCorpusAwareSystemPrompt(level, style, tone, customTone, writingSample, undefined, language, purpose)
+      : getSystemPrompt(level, style, tone, customTone, writingSample, language, purpose);
     const providerInfo = getProvider(model);
     const modelId = providerInfo?.defaultModel || model;
 
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             });
             rewritten += (j > 0 ? '\n\n' : '') + out;
           }
-          const final = enablePostprocess ? postprocess(rewritten, { light: true }) : rewritten;
+          const final = enablePostprocess ? postprocess(rewritten, { light: true, style: style as any }) : rewritten;
           const detection = detectAI(final);
           const confidenceReport = buildConfidenceReport(detection.score);
           const runtimeModelScore = await scoreHumanLikeness(final);
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
     // Also apply regular post-processing if toggled on
     if (enablePostprocess) {
-      currentText = postprocess(currentText, { characterShield: enableCharShield });
+      currentText = postprocess(currentText, { style: style as any });
     }
 
     // ==================== LAYER 3: Multi-Model Chain ====================
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
 
           // Apply light post-processing after each self-check fix
           if (enablePostprocess) {
-            currentText = postprocess(currentText, { light: true });
+            currentText = postprocess(currentText, { light: true, style: style as any });
           }
         } catch { break; }
       }
@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
       sentences, fullText: finalText, model, modelName: providerInfo?.name || model,
       wordCount: { input: countWords(text), output: countWords(finalText) },
       timestamp: Date.now(), passes, finalScore: finalDetection.score,
-      options: { level, style, tone, language },
+      options: { level, style, tone, language, purpose },
       confidenceReport,
       runtimeModelScore,
       fallbackBehavior: {

@@ -1,7 +1,7 @@
 // StealthHumanizer v3 - Anti-Detection Prompt Engine
 // Rewritten to actually defeat AI detectors by disrupting statistical fingerprints
 
-import { RewriteLevel, StylePreset, TonePreset } from './types';
+import { RewriteLevel, StylePreset, TonePreset, TextPurpose } from './types';
 
 // ==================== TONE CONFIGURATIONS ====================
 
@@ -116,9 +116,16 @@ CRITICAL RULES — Follow these EXACTLY:
    - NEVER use: furthermore, moreover, additionally, consequently, in conclusion, it is important to note, delve into, tapestry, landscape, realm, multifaceted, robust, seamless, synergy, paradigm, innovative, cutting-edge, groundbreaking, transformative, comprehensive, unprecedented, utilize, facilitate, leverage, foster, cultivate, empower, streamline, optimize, implement, navigate, embark, underscores, highlights, showcases, illustrates, demonstrates
    - NEVER use: significantly, substantially, notably, remarkably, particularly, essentially, fundamentally, ultimately, inherently, arguably
    - NEVER start sentences with: "In this [article/paper/study]", "The [results/findings/analysis]", "Research has shown", "It is [widely/commonly]", "There is a growing", "One of the"
-   - Use unexpected word choices. Instead of "important" → "kind of a big deal", "matters", "changes things"
+   - Use unexpected word choices. Instead of "important" → "matters", "changes things", "worth paying attention to"
    - Instead of "demonstrates" → "shows", "makes clear", "tells us"
-   - Instead of "significant" → "real", "big", "notable", "the kind that matters"
+   - Instead of "significant" → "real", "big", "notable", "worth mentioning"
+
+7. REGISTER MATCHING:
+   - Match formality to the topic and style. Academic text should stay academic — don't insert slang into a research paper.
+   - Casual interjections ("Right.", "Wild.", "Honestly.") are only appropriate for casual/creative contexts.
+   - For academic/professional: use mild asides ("— though this remains debated"), not slang.
+   - For casual/creative: full personality is appropriate.
+   - Never force casualness in formal writing. The goal is natural, not fake-casual.
 
 3. STRUCTURAL DISRUPTION:
    - Never start two consecutive paragraphs the same way
@@ -178,6 +185,67 @@ const STYLE_OVERLAYS: Record<StylePreset, string> = {
   technical: `Style: Technical but human. Precise terms, concrete examples. "You'll see" not "It can be observed." Step-by-step.`,
 };
 
+// ==================== PURPOSE-SPECIFIC OVERLAYS ====================
+
+export const PURPOSE_CONFIGS: Record<TextPurpose, {
+  name: string; icon: string; description: string; promptOverlay: string;
+}> = {
+  essay: {
+    name: 'Essay',
+    icon: 'FileText',
+    description: 'Academic or argumentative essay',
+    promptOverlay: `Purpose: Essay. Maintain a clear thesis and argument structure. Each paragraph should develop one idea. Use evidence and reasoning, not just assertions. Avoid bullet points — write in prose. End with a strong concluding thought (not "in conclusion").`,
+  },
+  article: {
+    name: 'Article',
+    icon: 'Newspaper',
+    description: 'Blog post or online article',
+    promptOverlay: `Purpose: Article. Engaging introduction that hooks the reader. Clear subheadings or section breaks. Mix facts with analysis. End with a takeaway or call to action. Keep paragraphs short (2-4 sentences) for readability.`,
+  },
+  blog: {
+    name: 'Blog Post',
+    icon: 'PenLine',
+    description: 'Personal or professional blog',
+    promptOverlay: `Purpose: Blog. Conversational and personal. Use "I" and "you." Short paragraphs. Include opinions and personal takes. Headings are OK. Write like you're explaining to a smart friend.`,
+  },
+  email: {
+    name: 'Email',
+    icon: 'Mail',
+    description: 'Professional or personal email',
+    promptOverlay: `Purpose: Email. Clear and direct. State the purpose early. Use short paragraphs (1-3 sentences). Professional but warm tone. End with a clear next step or question.`,
+  },
+  marketing: {
+    name: 'Marketing',
+    icon: 'Megaphone',
+    description: 'Copy, ads, or landing pages',
+    promptOverlay: `Purpose: Marketing. Persuasive and benefit-focused. Use concrete numbers and specific claims instead of vague adjectives. Address the reader directly with "you." Keep sentences punchy. Focus on outcomes.`,
+  },
+  report: {
+    name: 'Report',
+    icon: 'BarChart3',
+    description: 'Business or research report',
+    promptOverlay: `Purpose: Report. Structured and factual. Use clear section breaks. Present data with context. Use "we found" or "the data shows" rather than passive constructions. Include specific numbers. Professional but not stiff.`,
+  },
+  story: {
+    name: 'Story',
+    icon: 'BookOpen',
+    description: 'Creative fiction or narrative',
+    promptOverlay: `Purpose: Story. Show don't tell. Use sensory details and dialogue. Vary paragraph length for pacing. Build scenes rather than summarizing. Let the reader experience events rather than reading about them.`,
+  },
+  'social-media': {
+    name: 'Social Media',
+    icon: 'Share2',
+    description: 'Twitter, LinkedIn, Instagram, etc.',
+    promptOverlay: `Purpose: Social media. Hook in the first line. Keep it concise. Use line breaks for readability. One idea per paragraph. Conversational tone. OK to use casual language and mild slang.`,
+  },
+  general: {
+    name: 'General',
+    icon: 'Type',
+    description: 'Any other text type',
+    promptOverlay: '',
+  },
+};
+
 // ==================== HUMAN WRITING SAMPLE HANDLING ====================
 
 export function buildSamplePrompt(writingSample: string): string {
@@ -219,7 +287,8 @@ export function getSystemPrompt(
   tone: TonePreset = 'conversational',
   customTone?: string,
   writingSample?: string,
-  language?: string
+  language?: string,
+  purpose?: TextPurpose
 ): string {
   // Use Chinese-specific prompts for Chinese languages
   if (language === 'zh-CN' || language === 'zh-TW') {
@@ -236,11 +305,15 @@ Personality: ${toneConfig.personalityTraits.join(', ')}`
 
   const sampleSection = writingSample ? buildSamplePrompt(writingSample) : '';
 
+  const purposeSection = purpose && purpose !== 'general'
+    ? `\n\n${PURPOSE_CONFIGS[purpose].promptOverlay}`
+    : '';
+
   return `${PERSONAS[level]}
 
 ${ANTI_DETECTION_CORE}
 
-${STYLE_OVERLAYS[style]}
+${STYLE_OVERLAYS[style]}${purposeSection}
 ${toneSection}
 ${sampleSection}
 
@@ -278,7 +351,8 @@ export function getRehumanizePrompt(
   level: RewriteLevel,
   style: StylePreset,
   tone: TonePreset = 'conversational',
-  customTone?: string
+  customTone?: string,
+  purpose?: TextPurpose
 ): string {
   return `These sentences were flagged as AI-generated. Rewrite each one to sound completely human.
 
@@ -580,9 +654,10 @@ export function getCorpusAwareSystemPrompt(
   customTone?: string,
   writingSample?: string,
   domain?: string,
-  language?: string
+  language?: string,
+  purpose?: TextPurpose
 ): string {
-  const base = getSystemPrompt(level, style, tone, customTone, writingSample, language);
+  const base = getSystemPrompt(level, style, tone, customTone, writingSample, language, purpose);
   if (!hasStyleModel()) return base;
   return base + buildStyleInjectionPrompt(domain);
 }

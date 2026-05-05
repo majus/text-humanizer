@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Key, Eye, EyeOff, ExternalLink, Shield, Check, X, Zap } from 'lucide-react';
+import { Settings as SettingsIcon, Key, Eye, EyeOff, ExternalLink, Shield, Check, X, Zap, Star, RotateCcw } from 'lucide-react';
 import { PROVIDERS, getProvider, testApiKey } from '@/lib/providers';
 import { getApiKeys, setApiKeys, clearApiKeys } from '@/lib/storage';
+import { ModelProvider } from '@/lib/types';
 
 interface SettingsProps {
   showToast: (type: 'success' | 'error' | 'info' | 'warning', message: string) => void;
@@ -14,6 +15,10 @@ export default function Settings({ showToast }: SettingsProps) {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [selectedProvider, setSelectedProvider] = useState<string>('gemini');
   const [testing, setTesting] = useState<string | null>(null);
+  const [quickKey, setQuickKey] = useState('');
+  const [quickTesting, setQuickTesting] = useState(false);
+  const [quickStatus, setQuickStatus] = useState<'idle' | 'testing' | 'valid' | 'invalid'>('idle');
+  const [testAllStatus, setTestAllStatus] = useState<Record<string, 'valid' | 'invalid' | 'testing'>>({});
 
   useEffect(() => { setKeys(getApiKeys()); }, []);
 
@@ -44,6 +49,47 @@ export default function Settings({ showToast }: SettingsProps) {
 
   const current = getProvider(selectedProvider as any);
 
+  const handleQuickSetup = async () => {
+    if (!quickKey.trim()) { showToast('warning', 'Please enter an API key'); return; }
+    setQuickTesting(true);
+    setQuickStatus('testing');
+    try {
+      const valid = await testApiKey('gemini' as ModelProvider, quickKey.trim());
+      if (valid) {
+        handleSave('gemini', quickKey.trim());
+        setQuickStatus('valid');
+        showToast('success', 'Gemini key saved and verified! You\'re ready to go.');
+      } else {
+        setQuickStatus('invalid');
+        showToast('error', 'Invalid Gemini key. Check and try again.');
+      }
+    } catch (err: any) {
+      setQuickStatus('invalid');
+      showToast('error', `Error: ${err.message}`);
+    } finally {
+      setQuickTesting(false);
+    }
+  };
+
+  const handleTestAll = async () => {
+    const entries = Object.entries(keys).filter(([_, v]) => v && v.trim().length > 0);
+    if (entries.length === 0) { showToast('warning', 'No keys to test'); return; }
+    const status: Record<string, 'valid' | 'invalid' | 'testing'> = {};
+    entries.forEach(([id]) => { status[id] = 'testing'; });
+    setTestAllStatus(status);
+    let validCount = 0;
+    await Promise.all(entries.map(async ([id, key]) => {
+      try {
+        const ok = await testApiKey(id as ModelProvider, key!);
+        setTestAllStatus(prev => ({ ...prev, [id]: ok ? 'valid' : 'invalid' }));
+        if (ok) validCount++;
+      } catch {
+        setTestAllStatus(prev => ({ ...prev, [id]: 'invalid' }));
+      }
+    }));
+    showToast('success', `${validCount}/${entries.length} key(s) valid`);
+  };
+
   const freeProviders = PROVIDERS.filter(p => p.free);
   const paidProviders = PROVIDERS.filter(p => !p.free);
 
@@ -64,6 +110,51 @@ export default function Settings({ showToast }: SettingsProps) {
         </div>
       </div>
 
+      {/* Quick Setup */}
+      <div className="bg-gradient-to-br from-accent-500/10 to-accent-600/5 border border-accent-500/30 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-5 h-5 text-accent-400" />
+          <h3 className="text-lg font-medium text-white">Quick Setup</h3>
+          <span className="px-2 py-0.5 rounded-full bg-accent-500/20 text-accent-400 text-xs font-medium">Fastest way to start</span>
+        </div>
+        <p className="text-sm text-dark-300 mb-3">Get started in 30 seconds with a free Gemini API key:</p>
+        <div className="flex gap-2">
+          <input type="password" value={quickKey} onChange={e => { setQuickKey(e.target.value); setQuickStatus('idle'); }}
+            placeholder="Paste your Gemini API key here..."
+            className="flex-1 px-4 py-2.5 bg-dark-900/50 border border-dark-700/50 rounded-lg text-white placeholder-dark-500 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50" />
+          <button onClick={handleQuickSetup} disabled={quickTesting}
+            className="px-5 py-2.5 rounded-lg bg-accent-500 text-white font-medium text-sm hover:bg-accent-600 transition-colors disabled:opacity-50">
+            {quickTesting ? 'Verifying...' : 'Save & Verify'}
+          </button>
+        </div>
+        {quickStatus === 'valid' && <p className="text-xs text-green-400 mt-2">Key verified and saved! You can start humanizing now.</p>}
+        {quickStatus === 'invalid' && <p className="text-xs text-red-400 mt-2">Invalid key. <a href="https://aistudio.google.com/apikey" target="_blank" className="underline">Get one here</a>.</p>}
+        <div className="flex items-center gap-3 mt-3">
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer"
+            className="text-xs text-accent-400 hover:underline flex items-center gap-1">
+            <ExternalLink className="w-3 h-3" /> Get free Gemini key
+          </a>
+          {Object.values(keys).some(v => v && v.trim().length > 0) && (
+            <button onClick={handleTestAll} className="text-xs text-dark-400 hover:text-white flex items-center gap-1 transition-colors">
+              <RotateCcw className="w-3 h-3" /> Test all saved keys
+            </button>
+          )}
+        </div>
+        {Object.keys(testAllStatus).length > 0 && (
+          <div className="flex gap-2 flex-wrap mt-3">
+            {Object.entries(testAllStatus).map(([id, status]) => (
+              <span key={id} className={`px-2 py-1 rounded text-xs ${
+                status === 'valid' ? 'bg-green-500/20 text-green-400' :
+                status === 'invalid' ? 'bg-red-500/20 text-red-400' :
+                'bg-dark-700/50 text-dark-400'
+              }`}>
+                {status === 'testing' ? 'Testing' : status === 'valid' ? 'Valid' : 'Invalid'}: {id}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Free Providers */}
       <div>
         <h3 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
@@ -80,7 +171,10 @@ export default function Settings({ showToast }: SettingsProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-white">{provider.name}</h4>
+                    {provider.id === 'gemini' && <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />}
                     {keys[provider.id] && <Check className="w-4 h-4 text-green-400" />}
+                    {testAllStatus[provider.id] === 'valid' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400">Valid</span>}
+                    {testAllStatus[provider.id] === 'invalid' && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">Invalid</span>}
                     <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400">FREE</span>
                   </div>
                   <p className="text-sm text-dark-400 mt-1">{provider.description}</p>

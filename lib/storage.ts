@@ -5,6 +5,7 @@ const KEYS = {
   API_KEYS: 'stealthhumanizer_api_keys',
   HISTORY: 'stealthhumanizer_history',
   THEME: 'stealthhumanizer_theme',
+  VISITED: 'stealthhumanizer_visited',
 };
 
 // API Keys
@@ -84,6 +85,17 @@ export function getTheme(): 'dark' | 'light' {
 export function setTheme(theme: 'dark' | 'light'): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEYS.THEME, theme);
+}
+
+// Visited flag
+export function hasVisited(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(KEYS.VISITED) === 'true';
+}
+
+export function markVisited(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(KEYS.VISITED, 'true');
 }
 
 // Word count utility

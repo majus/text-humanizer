@@ -6,6 +6,8 @@ import { getRandomSafeSynonym } from './synonyms';
 import { applyCollocation, applyRandomCollocation } from './collocations';
 import type { CorpusStyleModel } from './style-model';
 import { loadStyleModel } from './style-model';
+import { calculateReadability } from './readability';
+import type { StylePreset } from './types';
 
 // ==================== HELPERS ====================
 
@@ -110,19 +112,30 @@ function swapSynonyms(text: string): string {
   return result.join('');
 }
 
-// ==================== CHARACTER SHIELD (Optional) ====================
+// ==================== TYPOGRAPHIC VARIATION (Safe) ====================
 
-export function addInvisibleCharacters(text: string): string {
-  const invisibleChars = ['\u200B', '\u200C', '\u200D', '\uFEFF'];
-  const words = text.split(/(\s+)/);
-  return words.map((word, i) => {
-    if (i % 7 === 0 && word.trim().length > 3) {
-      const char = invisibleChars[Math.floor(Math.random() * invisibleChars.length)];
-      const pos = Math.floor(word.length * 0.6);
-      return word.slice(0, pos) + char + word.slice(pos);
+function addTypographicVariation(text: string): string {
+  let result = text;
+  // Occasionally replace straight quotes with smart quotes (not in code-like contexts)
+  if (chance(0.15)) {
+    // Replace "word" with "word" (opening/closing smart quotes)
+    const quoted = Array.from(result.matchAll(/"([^"]{2,})"/g));
+    if (quoted.length > 0) {
+      const q = randomPick(quoted);
+      if (q.index !== undefined) {
+        const word = q[1];
+        result = result.replace(q[0], `\u201C${word}\u201D`);
+      }
     }
-    return word;
-  }).join('');
+  }
+  // Occasionally use en-dash for number ranges (e.g., 10-15 \u2192 10\u201315)
+  if (chance(0.20)) {
+    result = result.replace(/(\d)\s*[-\u2013]\s*(\d)/g, (match, a, b) => {
+      if (chance(0.3)) return `${a}\u2013${b}`;
+      return match;
+    });
+  }
+  return result;
 }
 
 // ==================== 2b. SENTENCE REORDERING ====================
@@ -541,21 +554,23 @@ function injectHumanVoice(text: string, model: CorpusStyleModel): string {
 
 // ==================== 2g. AGGRESSIVE AI VOCABULARY REMOVAL ====================
 
-function aggressiveSynonymSwap(text: string): string {
+function aggressiveSynonymSwap(text: string, style?: StylePreset): string {
+  const isFormal = style === 'academic' || style === 'professional' || style === 'technical';
+
   const replacements: [RegExp, string[]][] = [
     [/\bdemonstrates?\b/gi, ['shows', 'makes clear', 'reveals', 'tells us']],
     [/\bfurthermore\b/gi, ['also', 'and', 'on top of that', 'plus']],
     [/\bmoreover\b/gi, ['also', 'and', 'besides', "what's more"]],
     [/\badditionally\b/gi, ['also', 'and', 'plus', 'on top of that']],
     [/\bconsequently\b/gi, ['so', 'which means', 'as a result', 'because of that']],
-    [/\bsignificantly\b/gi, ['a lot', 'noticeably', 'quite a bit', 'really']],
-    [/\bsubstantially\b/gi, ['a lot', 'quite a bit', 'in a big way']],
+    [/\bsignificantly\b/gi, isFormal ? ['noticeably', 'considerably', 'to a meaningful extent'] : ['a lot', 'noticeably', 'quite a bit']],
+    [/\bsubstantially\b/gi, isFormal ? ['considerably', 'to a large extent', 'materially'] : ['a lot', 'quite a bit', 'in a big way']],
     [/\bnotably\b/gi, ['especially', 'worth pointing out', 'interestingly']],
-    [/\bremarkably\b/gi, ['surprisingly', 'pretty amazing', 'kind of wild']],
+    [/\bremarkably\b/gi, isFormal ? ['surprisingly', 'strikingly', 'to a notable degree'] : ['surprisingly', 'interestingly', 'quite a bit']],
     [/\bparticularly\b/gi, ['especially', 'mainly', 'mostly']],
-    [/\bessentially\b/gi, ['basically', 'at its core', 'when you get down to it']],
-    [/\bfundamentally\b/gi, ['basically', 'at its core', 'really']],
-    [/\bultimately\b/gi, ['in the end', 'at the end of the day', 'when all is said and done']],
+    [/\bessentially\b/gi, isFormal ? ['fundamentally', 'at its core', 'in essence'] : ['basically', 'at its core', 'when you get down to it']],
+    [/\bfundamentally\b/gi, isFormal ? ['at its core', 'in essence', 'in principle'] : ['basically', 'at its core', 'really']],
+    [/\bultimately\b/gi, isFormal ? ['in the end', 'in the final analysis', 'as a conclusion'] : ['in the end', 'at the end of the day', 'when all is said and done']],
     [/\binherently\b/gi, ['naturally', 'by its nature', 'built into it']],
     [/\butilize\b/gi, ['use', 'work with', 'make use of']],
     [/\bfacilitate\b/gi, ['help with', 'make easier', 'enable']],
@@ -564,15 +579,15 @@ function aggressiveSynonymSwap(text: string): string {
     [/\bimplement\b/gi, ['set up', 'put in place', 'start using']],
     [/\bcomprehensive\b/gi, ['thorough', 'complete', 'full']],
     [/\binnovative\b/gi, ['new', 'fresh', 'creative', 'different']],
-    [/\btransformative\b/gi, ['game-changing', 'really big', 'major']],
+    [/\btransformative\b/gi, isFormal ? ['major', 'significant', 'far-reaching'] : ['major', 'really big', 'a big deal']],
     [/\bunprecedented\b/gi, ['never seen before', 'completely new', 'totally unusual']],
     [/\bstreamline\b/gi, ['simplify', 'make smoother', 'speed up']],
     [/\bcrucial\b/gi, ['key', 'important', 'really matters']],
     [/\bpivotal\b/gi, ['key', 'important', 'central']],
     [/\bit is evident that\b/gi, ['clearly', 'obviously', 'you can see that']],
     [/\bit is clear that\b/gi, ['clearly', 'obviously']],
-    [/\bplays? a crucial role\b/gi, ['matters a lot', 'is really important', 'makes a big difference']],
-    [/\bplays? an important role\b/gi, ['matters', 'is important', 'makes a difference']],
+    [/\bplays? a crucial role\b/gi, isFormal ? ['is central to', 'is a key factor in', 'has a significant impact on'] : ['matters a lot', 'is really important', 'makes a big difference']],
+    [/\bplays? an important role\b/gi, isFormal ? ['is significant in', 'contributes meaningfully to', 'is a key part of'] : ['matters', 'is important', 'makes a difference']],
     [/\bhas the potential to\b/gi, ['could', 'might', 'stands to']],
     [/\bin today's world\b/gi, ['now', 'these days', 'right now']],
     [/\bin the modern era\b/gi, ['now', 'these days']],
@@ -587,10 +602,10 @@ function aggressiveSynonymSwap(text: string): string {
     [/\bmultifaceted\b/gi, ['complex', 'complicated', 'many-sided']],
     [/\bembark on a journey\b/gi, ['start', 'begin', 'get into']],
     [/\bseamless(ly)?\b/gi, ['smooth', 'easy', 'natural']],
-    [/\bnumerous\b/gi, ['many', 'a lot of', 'tons of']],
+    [/\bnumerous\b/gi, isFormal ? ['many', 'several', 'a considerable number of'] : ['many', 'a lot of', 'tons of']],
     [/\ba variety of\b/gi, ['different', 'various', 'all kinds of']],
-    [/\ba multitude of\b/gi, ['many', 'a lot of', 'tons of']],
-    [/\ba significant number of\b/gi, ['many', 'a lot of']],
+    [/\ba multitude of\b/gi, isFormal ? ['many', 'numerous', 'a significant number of'] : ['many', 'a lot of', 'tons of']],
+    [/\ba significant number of\b/gi, isFormal ? ['many', 'numerous', 'a considerable number of'] : ['many', 'a lot of', 'quite a few']],
   ];
 
   let result = text;
@@ -602,7 +617,8 @@ function aggressiveSynonymSwap(text: string): string {
 
 // ==================== 2h. FLOW DISRUPTION ====================
 
-function disruptFlow(text: string): string {
+function disruptFlow(text: string, style?: StylePreset): string {
+  const isFormal = style === 'academic' || style === 'professional' || style === 'technical';
   const paragraphs = splitParagraphs(text);
   return paragraphs.map(p => {
     const sentences = splitSentences(p);
@@ -610,22 +626,45 @@ function disruptFlow(text: string): string {
 
     const result = [...sentences];
 
-    // 30% chance: add a short emphasis sentence
-    if (chance(0.30) && result.length >= 3) {
-      const insertions = ['Right.', 'Exactly.', 'Makes sense.', 'Think about that.', 'Hmm.', 'Interesting.', 'Yeah.', 'No, really.', 'Wild.', 'Honestly.'];
-      const idx = 1 + Math.floor(Math.random() * (result.length - 1));
-      result.splice(idx, 0, randomPick(insertions));
+    if (isFormal) {
+      // Formal: mild insertions — parenthetical asides, qualifying clauses
+      if (chance(0.20) && result.length >= 3) {
+        const formalInsertions = [
+          '— though this remains debated',
+          '— at least in principle',
+          'which is worth considering.',
+          'notably.',
+          '— a point worth emphasizing.',
+          'in practice.',
+        ];
+        const idx = 1 + Math.floor(Math.random() * (result.length - 1));
+        result.splice(idx, 0, randomPick(formalInsertions));
+      }
+      // Formal: start with a transition rather than a conjunction
+      if (chance(0.15)) {
+        const formalStarters = ['Importantly, ', 'In practice, ', 'Notably, ', 'As it turns out, ', 'Looking at the data, '];
+        result[0] = randomPick(formalStarters) + result[0].charAt(0).toLowerCase() + result[0].slice(1);
+      }
+    } else {
+      // Casual/creative: keep current behavior but expanded
+      if (chance(0.30) && result.length >= 3) {
+        const insertions = ['Right.', 'Exactly.', 'Makes sense.', 'Think about that.', 'Hmm.', 'Interesting.', 'Yeah.', 'No, really.', 'Honestly.', 'True story.', 'Funny enough.'];
+        const idx = 1 + Math.floor(Math.random() * (result.length - 1));
+        result.splice(idx, 0, randomPick(insertions));
+      }
+
+      // 20% chance: start with a conjunction
+      if (chance(0.20)) {
+        const conjunctions = ['And ', 'But ', 'So ', 'Plus ', 'Then again, ', 'OK—', 'Well, '];
+        result[0] = randomPick(conjunctions) + result[0].charAt(0).toLowerCase() + result[0].slice(1);
+      }
     }
 
-    // 20% chance: start with a conjunction
-    if (chance(0.20)) {
-      const conjunctions = ['And ', 'But ', 'So ', 'Plus ', 'Then again, ', 'OK—', 'Well, '];
-      result[0] = randomPick(conjunctions) + result[0].charAt(0).toLowerCase() + result[0].slice(1);
-    }
-
-    // 15% chance: add a rhetorical question
+    // 15% chance: add a rhetorical question (both styles)
     if (chance(0.15) && result.length >= 2) {
-      const questions = ['Why does this matter?', 'Makes you wonder, right?', 'Sound familiar?', 'Who would have thought?', 'And is that really so surprising?'];
+      const questions = isFormal
+        ? ['Why does this matter?', 'What are the implications?', 'Is this correlation or causation?', 'How significant is this finding?']
+        : ['Makes you wonder, right?', 'Sound familiar?', 'Who would have thought?', 'And is that really so surprising?'];
       const idx = Math.floor(Math.random() * result.length);
       result.splice(idx, 0, randomPick(questions));
     }
@@ -638,19 +677,22 @@ function disruptFlow(text: string): string {
 
 export interface PostProcessOptions {
   light?: boolean; // If true, apply lighter version (for Layer 4)
-  characterShield?: boolean; // If true, insert invisible Unicode chars to disrupt detectors
+  style?: StylePreset; // Adjust transformations to match writing style
+  skipReadabilityGuard?: boolean; // For internal use when re-applying light passes
 }
 
 /**
  * Apply all non-LLM post-processing transformations.
  * Each transformation is randomized, so the same input produces different output each time.
+ * Style-aware: academic/professional gets milder transformations than casual/creative.
  */
 export function postprocess(text: string, options?: PostProcessOptions): string {
   const light = options?.light ?? false;
+  const style = options?.style;
   let result = text;
 
-  // ALWAYS: Aggressive AI vocabulary removal
-  result = aggressiveSynonymSwap(result);
+  // ALWAYS: Aggressive AI vocabulary removal (style-aware)
+  result = aggressiveSynonymSwap(result, style);
 
   // ALWAYS: Collocation replacements
   result = injectPerplexity(result);
@@ -658,7 +700,7 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
   if (light) {
     result = swapSynonyms(result);
     if (chance(0.5)) result = addPunctuationNoise(result);
-    if (chance(0.3)) result = disruptFlow(result);
+    if (chance(0.3)) result = disruptFlow(result, style);
     return result;
   }
 
@@ -666,7 +708,7 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
   result = swapSynonyms(result);
   result = addPunctuationNoise(result);
   result = manipulateSentenceLengths(result);
-  result = disruptFlow(result);
+  result = disruptFlow(result, style);
 
   // Sentence reordering
   const paragraphs = splitParagraphs(result);
@@ -680,6 +722,14 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
     result = applyRandomCollocation(result);
   }
 
+  // Safe typographic variation (smart quotes, en-dashes)
+  result = addTypographicVariation(result);
+
+  // Readability guard
+  if (!options?.skipReadabilityGuard) {
+    result = readabilityGuard(text, result);
+  }
+
   // Clean up
   result = result
     .replace(/  +/g, (match) => {
@@ -691,9 +741,32 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  if (options?.characterShield) {
-    result = addInvisibleCharacters(result);
+  return result;
+}
+
+// ==================== READABILITY GUARD ====================
+
+/**
+ * Prevents post-processing from destroying readability.
+ * If the post-processed text has a Flesch Reading Ease score more than 15 points
+ * lower than the original, revert the most aggressive changes.
+ */
+function readabilityGuard(original: string, processed: string): string {
+  const origScores = calculateReadability(original);
+  const procScores = calculateReadability(processed);
+  const drop = origScores.fleschReadingEase - procScores.fleschReadingEase;
+
+  if (drop > 15) {
+    // Revert to a lighter version: only synonym swaps + collocations
+    let safe = aggressiveSynonymSwap(original);
+    safe = injectPerplexity(safe);
+    safe = swapSynonyms(safe);
+    safe = addTypographicVariation(safe);
+    return safe
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
-  return result;
+  return processed;
 }

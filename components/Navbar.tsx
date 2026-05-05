@@ -1,6 +1,6 @@
 'use client';
 
-import { PenTool, Search, History, Settings, Sun, Moon, Layers } from 'lucide-react';
+import { PenTool, Search, History, Settings, Sun, Moon, Layers, Sparkles } from 'lucide-react';
 import type { Tab } from '@/lib/types';
 
 interface NavbarProps {
@@ -11,7 +11,7 @@ interface NavbarProps {
 }
 
 const tabs: { id: Tab; label: string; icon: typeof PenTool }[] = [
-  { id: 'humanizer', label: 'Humanizer', icon: PenTool },
+  { id: 'humanizer', label: 'Humanizer', icon: Sparkles },
   { id: 'batch', label: 'Batch', icon: Layers },
   { id: 'detector', label: 'Detector', icon: Search },
   { id: 'history', label: 'History', icon: History },
@@ -30,7 +30,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, toggleTheme }: 
             <div>
               <h1 className="text-xl font-bold text-white">
                 <span className="hero-gradient">Stealth</span><span className="text-white">Humanizer</span>
-                <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-full bg-accent-500/20 text-accent-400 align-middle">v2</span>
+                <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-full bg-accent-500/20 text-accent-400 align-middle">v2.1</span>
               </h1>
               <p className="text-xs text-dark-400">AI text humanizer • Free & Open Source</p>
             </div>

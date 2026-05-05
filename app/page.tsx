@@ -11,7 +11,7 @@ import Settings from '@/components/Settings';
 import Toast from '@/components/Toast';
 import Footer from '@/components/Footer';
 import { Toast as ToastType, Tab } from '@/lib/types';
-import { getTheme, setTheme as saveTheme } from '@/lib/storage';
+import { getTheme, setTheme as saveTheme, hasVisited, markVisited } from '@/lib/storage';
 
 function HeroSection() {
   const scrollToHumanizer = () => {
@@ -125,12 +125,17 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('humanizer');
   const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
   const [toasts, setToasts] = useState<ToastType[]>([]);
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   useEffect(() => {
     const saved = getTheme();
     setThemeState(saved);
     document.documentElement.classList.toggle('light', saved === 'light');
     document.documentElement.classList.toggle('dark', saved === 'dark');
+
+    const visited = hasVisited();
+    setIsReturningUser(visited);
+    if (!visited) markVisited();
   }, []);
 
   const toggleTheme = () => {
@@ -152,12 +157,12 @@ export default function Home() {
 
       {activeTab === 'humanizer' && (
         <>
-          <HeroSection />
-          <HowItWorks />
-          <main className="container mx-auto px-4 py-6 max-w-7xl" id="humanizer-section">
-            <Humanizer showToast={showToast} onGoToSettings={() => setActiveTab('settings')} />
+          {!isReturningUser && <HeroSection />}
+          {!isReturningUser && <HowItWorks />}
+          <main className={`container mx-auto px-4 py-6 max-w-7xl ${isReturningUser ? 'pt-24' : ''}`} id="humanizer-section">
+            <Humanizer showToast={showToast} onGoToSettings={() => setActiveTab('settings')} isFirstVisit={!isReturningUser} />
           </main>
-          <TrustIndicators />
+          {!isReturningUser && <TrustIndicators />}
         </>
       )}
 

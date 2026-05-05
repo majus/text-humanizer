@@ -7,8 +7,8 @@ import {
   Type, Languages, Upload, RotateCcw, CheckCircle, AlertTriangle,
   X, FileUp, BarChart2, Shield
 } from 'lucide-react';
-import { RewriteLevel, StylePreset, TonePreset, HumanizationResult, ModelProvider } from '@/lib/types';
-import { TONE_CONFIGS, SAMPLE_AI_TEXT, SAMPLE_TECHNICAL_TEXT } from '@/lib/prompts';
+import { RewriteLevel, StylePreset, TonePreset, TextPurpose, HumanizationResult, ModelProvider } from '@/lib/types';
+import { TONE_CONFIGS, SAMPLE_AI_TEXT, SAMPLE_TECHNICAL_TEXT, PURPOSE_CONFIGS } from '@/lib/prompts';
 import { detectAI, getScoreColor, getScoreBarColor } from '@/lib/detector';
 import { getReadabilityLabel } from '@/lib/readability';
 import { countWords, downloadAsTxt, downloadAsDocx, getApiKeys } from '@/lib/storage';
@@ -72,6 +72,18 @@ const LANGUAGES = [
   { code: 'tr', name: 'Turkish' },
 ];
 
+const PURPOSES: { id: TextPurpose; name: string; icon: string }[] = [
+  { id: 'general', name: 'General', icon: 'Type' },
+  { id: 'essay', name: 'Essay', icon: 'FileText' },
+  { id: 'article', name: 'Article', icon: 'Newspaper' },
+  { id: 'blog', name: 'Blog', icon: 'PenLine' },
+  { id: 'email', name: 'Email', icon: 'Mail' },
+  { id: 'marketing', name: 'Marketing', icon: 'Megaphone' },
+  { id: 'report', name: 'Report', icon: 'BarChart3' },
+  { id: 'story', name: 'Story', icon: 'BookOpen' },
+  { id: 'social-media', name: 'Social', icon: 'Share2' },
+];
+
 interface GrammarIssue {
   type: string;
   original: string;
@@ -82,9 +94,10 @@ interface GrammarIssue {
 interface HumanizerProps {
   showToast: (type: 'success' | 'error' | 'info' | 'warning', message: string) => void;
   onGoToSettings?: () => void;
+  isFirstVisit?: boolean;
 }
 
-export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps) {
+export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: HumanizerProps) {
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState<HumanizationResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -93,6 +106,7 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
   const [style, setStyle] = useState<StylePreset>('humanize');
   const [tone, setTone] = useState<TonePreset>('conversational');
   const [customTone, setCustomTone] = useState('');
+  const [purpose, setPurpose] = useState<TextPurpose>('general');
   const [language, setLanguage] = useState('auto');
   const [targetScore, setTargetScore] = useState(80);
   const [expandedSentence, setExpandedSentence] = useState<number | null>(null);
@@ -118,7 +132,6 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
 
   // Pipeline options
   const [enablePostprocess, setEnablePostprocess] = useState(true);
-  const [characterShield, setCharacterShield] = useState(false);
   const [enableChain, setEnableChain] = useState(false);
   const [selectedChainModels, setSelectedChainModels] = useState<string[]>([]);
   const [pipelineStep, setPipelineStep] = useState('');
@@ -140,6 +153,12 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
     const reuse = sessionStorage.getItem('stealthhumanizer_reuse_text');
     if (reuse) { setInputText(reuse); sessionStorage.removeItem('stealthhumanizer_reuse_text'); }
   }, []);
+
+  useEffect(() => {
+    if (isFirstVisit && !inputText) {
+      setInputText(SAMPLE_AI_TEXT);
+    }
+  }, [isFirstVisit]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -185,9 +204,8 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: inputText, level, style, tone, customTone,
-          model: providerId, apiKey, targetScore, language, writingSample,
+          model: providerId, apiKey, targetScore, language, writingSample, purpose,
           postprocess: enablePostprocess,
-          characterShield,
           chainModels: enableChain ? selectedChainModels : [],
           apiKeys: allApiKeys,
         }),
@@ -558,7 +576,9 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
   };
 
   const detection = result ? detectAI(result.fullText) : null;
+  const originalDetection = result ? detectAI(inputText) : null;
   const readLabel = detection ? getReadabilityLabel(detection.readability.fleschReadingEase) : null;
+  const scoreChange = detection && originalDetection ? detection.score - originalDetection.score : 0;
   const flaggedCount = detection?.sentences.filter(s => s.classification !== 'human').length || 0;
 
   return (
@@ -628,8 +648,8 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
           </div>
         </div>
 
-        {/* Style + Tone */}
-        <div className="grid md:grid-cols-2 gap-4">
+        {/* Style + Purpose + Tone */}
+        <div className="grid md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-dark-300 mb-2">Writing Style</label>
             <div className="flex gap-2 flex-wrap">
@@ -637,6 +657,17 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
                 <button key={s.id} onClick={() => setStyle(s.id)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${style === s.id ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25' : 'bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700'}`}>
                   <span>{s.icon}</span> {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-300 mb-2">Purpose</label>
+            <div className="flex gap-2 flex-wrap">
+              {PURPOSES.map(p => (
+                <button key={p.id} onClick={() => setPurpose(p.id)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${purpose === p.id ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/25' : 'bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700'}`}>
+                  {p.name}
                 </button>
               ))}
             </div>
@@ -724,20 +755,6 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
                     className={`relative w-11 h-6 rounded-full transition-colors ${enablePostprocess ? 'bg-accent-500' : 'bg-dark-600'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${enablePostprocess ? 'translate-x-5' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Character Shield Toggle */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-dark-200">🛡️ Character Shield</p>
-                    <p className="text-xs text-dark-500">Insert invisible Unicode chars to disrupt AI detector tokenization</p>
-                  </div>
-                  <button
-                    onClick={() => setCharacterShield(!characterShield)}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${characterShield ? 'bg-accent-500' : 'bg-dark-600'}`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${characterShield ? 'translate-x-5' : ''}`} />
                   </button>
                 </div>
 
@@ -839,6 +856,12 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
       {/* Input/Output */}
       <div className={`grid gap-6 ${showComparison && result ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
         <div>
+          {/* Recommended settings callout for first-time users */}
+          {isFirstVisit && (
+            <div className="mb-3 px-4 py-2.5 rounded-lg bg-accent-500/10 border border-accent-500/20 text-sm text-accent-300 animate-fade-in">
+              Recommended: <strong>Medium</strong> level + <strong>Humanize</strong> style + <strong>Conversational</strong> tone. Sample text loaded — click Humanize to try it!
+            </div>
+          )}
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-dark-300">Input Text</label>
             <div className="flex items-center gap-2">
@@ -892,6 +915,75 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
 
         {result && (
           <div>
+            {/* Improvement Summary Card */}
+            <div className="glass-card rounded-xl p-4 mb-3 animate-fade-in">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-white">Improvement Summary</h3>
+                <button onClick={handleCopy} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-500/20 text-accent-400 hover:bg-accent-500/30 text-xs font-medium transition-colors">
+                  <Copy className="w-3 h-3" /> Copy Result
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center">
+                  <p className="text-xs text-dark-400 mb-1">Human Score</p>
+                  <div className="flex items-center justify-center gap-1">
+                    {originalDetection && (
+                      <>
+                        <span className={`text-sm font-bold ${originalDetection.score >= 70 ? 'text-green-400' : originalDetection.score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                          {originalDetection.score}%
+                        </span>
+                        <ArrowRight className="w-3 h-3 text-dark-500" />
+                      </>
+                    )}
+                    <span className={`text-lg font-bold ${detection ? (detection.score >= 70 ? 'text-green-400' : detection.score >= 50 ? 'text-yellow-400' : 'text-red-400') : 'text-dark-200'}`}>
+                      {detection?.score || 0}%
+                    </span>
+                  </div>
+                  {scoreChange !== 0 && (
+                    <p className={`text-xs mt-0.5 ${scoreChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {scoreChange > 0 ? '+' : ''}{scoreChange}pts
+                    </p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-dark-400 mb-1">Readability</p>
+                  {detection && (
+                    <div className="flex items-center justify-center gap-1">
+                      {originalDetection && (
+                        <>
+                          <span className="text-sm font-bold text-dark-300">{originalDetection.readability.fleschReadingEase}</span>
+                          <ArrowRight className="w-3 h-3 text-dark-500" />
+                        </>
+                      )}
+                      <span className={`text-lg font-bold ${readLabel?.color || 'text-dark-200'}`}>{detection.readability.fleschReadingEase}</span>
+                    </div>
+                  )}
+                  {readLabel && <p className={`text-xs mt-0.5 ${readLabel.color}`}>{readLabel.label}</p>}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-dark-400 mb-1">Word Count</p>
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-sm font-bold text-dark-300">{result.wordCount.input}</span>
+                    <ArrowRight className="w-3 h-3 text-dark-500" />
+                    <span className="text-lg font-bold text-dark-200">{result.wordCount.output}</span>
+                  </div>
+                  <p className="text-xs mt-0.5 text-dark-500">
+                    {result.wordCount.input > 0 ? (((result.wordCount.output - result.wordCount.input) / result.wordCount.input) * 100).toFixed(0) : 0}% change
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-dark-400 mb-1">Passes</p>
+                  <p className="text-lg font-bold text-accent-400">{result.passes}</p>
+                  <p className="text-xs mt-0.5 text-dark-500">{result.modelName}</p>
+                </div>
+              </div>
+              {detection?.confidenceInterval && (
+                <p className="text-xs text-dark-500 mt-2 text-center">
+                  Confidence interval: {detection.confidenceInterval.lower}% — {detection.confidenceInterval.upper}%
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium text-dark-300">
                 Humanized Output
@@ -1056,7 +1148,7 @@ export default function Humanizer({ showToast, onGoToSettings }: HumanizerProps)
               <p className="text-xs text-dark-400">Reading Time</p>
             </div>
           </div>
-          <p className="text-xs text-dark-500 mt-3">⚡ Estimated score — real detectors (QuillBot, GPTZero, ZeroGPT) may differ. Ninja level + Character Shield gives best external results.</p>
+          <p className="text-xs text-dark-500 mt-3">Estimated score based on local heuristics. Real detectors (GPTZero, Originality.ai) may differ.</p>
         </div>
       )}
 

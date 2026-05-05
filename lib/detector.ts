@@ -1,6 +1,6 @@
 // StealthHumanizer v2 - Advanced AI Detection Engine
 
-import { DetectionResult, SentenceDetectionResult } from './types';
+import { DetectionResult, SentenceDetectionResult, DetailedDetectionReport } from './types';
 import { calculateReadability } from './readability';
 import type { CorpusStyleModel, CalibratedThresholds } from './style-model';
 
@@ -256,20 +256,20 @@ function analyzeSentence(sentence: string): SentenceDetectionResult {
     if (lower.includes(q)) { score -= 6; }
   });
 
-  // Human indicators (positive signals)
+  // Human indicators (positive signals) — reduced weight as these are weak signals
   let humanSignals = 0;
   HUMAN_INDICATORS.forEach(h => { if (lower.includes(h)) humanSignals++; });
-  score += humanSignals * 1;
+  score += humanSignals * 0.5;
 
   // Contractions (human signal)
   const contractions = sentence.match(/\w+'(?:t|s|re|ve|ll|d|m)\b/gi);
-  if (contractions) score += contractions.length * 1;
+  if (contractions) score += contractions.length * 0.5;
 
   // First person (human signal)
-  if (/\b(I|me|my|we|us|our)\b/i.test(sentence)) { score += 2; }
+  if (/\b(I|me|my|we|us|our)\b/i.test(sentence)) { score += 1; }
 
   // Second person
-  if (/\byou\b/i.test(sentence)) { score += 1; }
+  if (/\byou\b/i.test(sentence)) { score += 0.5; }
 
   // Questions (human signal)
   if (sentence.endsWith('?')) { score += 1; }
@@ -401,8 +401,19 @@ export function detectAI(text: string): DetectionResult {
   else if (overallScore >= mixedFloor) overallVerdict = 'mixed';
   else overallVerdict = 'ai';
 
+  // Confidence interval: wider when fewer sentences or high metric variance
+  const sentenceScoreVariance = sentenceResults.length > 1
+    ? sentenceResults.reduce((sum, r) => sum + Math.pow(r.score - overallScore, 2), 0) / sentenceResults.length
+    : 400;
+  const margin = Math.min(15, Math.round(Math.sqrt(sentenceScoreVariance) * 0.6 + (sentenceResults.length < 5 ? 6 : 2)));
+  const confidenceInterval = {
+    lower: Math.max(0, Math.round(overallScore - margin)),
+    upper: Math.min(100, Math.round(overallScore + margin)),
+  };
+
   return {
     score: Math.round(overallScore),
+    confidenceInterval,
     sentences: sentenceResults,
     overallVerdict,
     analysis: {
@@ -419,6 +430,73 @@ export function detectAI(text: string): DetectionResult {
       quantifierOveruse: Math.round(quantifierOveruse),
     },
     readability: calculateReadability(text),
+  };
+}
+
+// ==================== DETAILED REPORT ====================
+
+export function getDetailedDetectionReport(text: string): DetailedDetectionReport {
+  const result = detectAI(text);
+  const { sentences, analysis, score, confidenceInterval, overallVerdict } = result;
+
+  // Top 5 most AI-like sentences
+  const sortedAsc = [...sentences].sort((a, b) => a.score - b.score);
+  const topAiSentences = sortedAsc.slice(0, 5).map(s => ({
+    text: s.text.length > 120 ? s.text.slice(0, 117) + '...' : s.text,
+    score: s.score,
+    issues: s.issues,
+  }));
+
+  // Top 5 most human-like sentences
+  const sortedDesc = [...sentences].sort((a, b) => b.score - a.score);
+  const topHumanSentences = sortedDesc.slice(0, 5).map(s => ({
+    text: s.text.length > 120 ? s.text.slice(0, 117) + '...' : s.text,
+    score: s.score,
+    issues: s.issues,
+  }));
+
+  // Found AI phrases in text
+  const lower = text.toLowerCase();
+  const foundAiPhrases: string[] = [];
+  AI_PHRASES.forEach(phrase => {
+    if (lower.includes(phrase)) foundAiPhrases.push(phrase);
+  });
+
+  // Metrics summary with human-readable interpretations
+  const metricsSummary = [
+    { name: 'Perplexity', value: analysis.perplexity, interpretation: analysis.perplexity >= 55 ? 'Good diversity' : 'Low diversity (AI-like)' },
+    { name: 'Burstiness', value: analysis.burstiness, interpretation: analysis.burstiness >= 40 ? 'Good variation' : 'Uniform lengths (AI-like)' },
+    { name: 'Vocabulary Diversity', value: analysis.vocabularyDiversity, interpretation: analysis.vocabularyDiversity >= 60 ? 'Rich vocabulary' : 'Repetitive vocabulary' },
+    { name: 'Sentence Variation', value: analysis.sentenceLengthVariation, interpretation: analysis.sentenceLengthVariation >= 40 ? 'Good length variation' : 'Uniform sentence lengths' },
+    { name: 'AI Phrase Density', value: analysis.aiPhraseDensity, interpretation: analysis.aiPhraseDensity <= 15 ? 'Low AI phrasing' : 'High AI phrasing detected' },
+    { name: 'Passive Voice', value: analysis.passiveVoiceRatio, interpretation: analysis.passiveVoiceRatio <= 20 ? 'Acceptable passive use' : 'Excessive passive voice' },
+    { name: 'Transition Frequency', value: analysis.transitionFrequency, interpretation: analysis.transitionFrequency <= 12 ? 'Natural transitions' : 'Over-use of transitions' },
+    { name: 'Sentence Start Diversity', value: analysis.sentenceStartDiversity, interpretation: analysis.sentenceStartDiversity >= 60 ? 'Diverse openers' : 'Repetitive sentence openers' },
+  ];
+
+  // Actionable recommendations
+  const recommendations: string[] = [];
+  if (analysis.aiPhraseDensity > 15) recommendations.push('Remove AI-typical phrases like "furthermore," "it is important to note," "delve into"');
+  if (analysis.burstiness < 40) recommendations.push('Vary sentence lengths — mix short punchy sentences with longer ones');
+  if (analysis.perplexity < 55) recommendations.push('Use more varied vocabulary and unexpected word choices');
+  if (analysis.sentenceStartDiversity < 60) recommendations.push('Start sentences differently — avoid always using "The," "This," or transition words');
+  if (analysis.passiveVoiceRatio > 20) recommendations.push('Convert passive voice to active voice where possible');
+  if (analysis.transitionFrequency > 12) recommendations.push('Reduce transition words (however, moreover, furthermore) — use them sparingly');
+  if (analysis.hedgingFrequency > 20) recommendations.push('Reduce hedging language ("it could be argued," "it is possible that")');
+  if (topAiSentences.length > 0 && topAiSentences[0].score < 30) {
+    recommendations.push(`Focus on rewriting the lowest-scoring sentence: "${topAiSentences[0].text}"`);
+  }
+  if (recommendations.length === 0) recommendations.push('Text reads naturally — no major AI patterns detected');
+
+  return {
+    overallScore: score,
+    confidenceInterval,
+    verdict: overallVerdict,
+    topAiSentences,
+    topHumanSentences,
+    foundAiPhrases,
+    metricsSummary,
+    recommendations,
   };
 }
 
