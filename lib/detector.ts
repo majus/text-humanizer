@@ -68,6 +68,34 @@ const HUMAN_INDICATORS = [
   'anyway', 'so yeah', 'I dunno', 'tbh', 'imo',
 ];
 
+// Arabic-specific patterns
+const AR_AI_PHRASES = [
+  'من المهم أن نلاحظ', 'من الجدير بالذكر', 'من الضروري أن',
+  'في الختام', 'بصورة عامة', 'لذلك', 'بالإضافة إلى ذلك',
+  'من ناحية أخرى', 'في الواقع', 'في العصر الحديث',
+  'تلعب دوراً هاماً', 'من الضروري الإشارة إلى', 'في هذا الصدد',
+  'من خلال هذا المقال', 'نتيجة لذلك', 'علاوة على ذلك',
+  'كما هو معروف', 'من منظور', 'في ضوء ذلك',
+];
+
+const AR_AI_SENTENCE_STARTERS = [
+  'في هذا المقال', 'تظهر النتائج', 'تشير الدراسات',
+  'من الواضح أن', 'في ضوء', 'بناءً على',
+  'يمكن القول إن', 'من الملاحظ أن', 'تهدف هذه الدراسة',
+];
+
+const AR_HUMAN_INDICATORS = [
+  'يعني', 'بصراحة', 'صحيح', 'طيب', 'عموماً',
+  'الحمد لله', 'ما أدري', 'على فكرة', 'بس', 'بالتالي',
+  'يا جماعة', 'أنا فكرت', 'بكل صراحة', 'والله', 'يعني كذا',
+  'طبعاً', 'مو', 'ليش', 'إيش', 'وش',
+];
+
+const AR_TRANSITION_WORDS = [
+  'ومع ذلك', 'لذلك', 'بالإضافة', 'نتيجة لذلك', 'علاوة على ذلك',
+  'من جهة أخرى', 'في المقابل', 'بشكل عام', 'أخيراً', 'أولاً',
+];
+
 // ==================== CORE ANALYSIS FUNCTIONS ====================
 
 function splitIntoSentences(text: string): string[] {
@@ -171,6 +199,11 @@ function calculateAIPhraseDensity(text: string): number {
   const lower = text.toLowerCase();
   let count = 0;
   AI_PHRASES.forEach(phrase => { if (lower.includes(phrase)) count++; });
+  // Arabic AI phrases
+  const isArabic = /[؀-ۿ]/.test(text);
+  if (isArabic) {
+    AR_AI_PHRASES.forEach(phrase => { if (text.includes(phrase)) count++; });
+  }
   return Math.min(100, (count / Math.max(splitIntoSentences(text).length, 1)) * 20);
 }
 
@@ -214,6 +247,35 @@ function analyzeSentence(sentence: string): SentenceDetectionResult {
   let score = 35;
 
   const lower = sentence.toLowerCase();
+
+  // Arabic detection
+  const isArabic = /[؀-ۿ]/.test(sentence);
+
+  if (isArabic) {
+    // Arabic AI phrases
+    AR_AI_PHRASES.forEach(phrase => {
+      if (sentence.includes(phrase)) { score -= 22; issues.push(`AI phrase: "${phrase}"`); }
+    });
+    // Arabic AI sentence starters
+    AR_AI_SENTENCE_STARTERS.forEach(starter => {
+      if (sentence.startsWith(starter)) { score -= 12; issues.push('AI-like sentence opener (Arabic)'); }
+    });
+    // Arabic transition words
+    AR_TRANSITION_WORDS.forEach(w => {
+      if (sentence.includes(w)) { score -= 5; }
+    });
+    // Arabic human indicators (positive)
+    AR_HUMAN_INDICATORS.forEach(h => { if (sentence.includes(h)) score += 5; });
+
+    score = Math.max(0, Math.min(100, score));
+    let classification: 'human' | 'maybe' | 'ai';
+    const sFloor = calibratedThresholds?.humanScoreMin ?? 55;
+    const sMid = Math.max(20, sFloor - 20);
+    if (score >= sFloor) classification = 'human';
+    else if (score >= sMid) classification = 'maybe';
+    else classification = 'ai';
+    return { text: sentence, score, classification, issues };
+  }
 
   // AI phrases (heavy penalty)
   let aiPhraseCount = 0;
@@ -461,6 +523,13 @@ export function getDetailedDetectionReport(text: string): DetailedDetectionRepor
   AI_PHRASES.forEach(phrase => {
     if (lower.includes(phrase)) foundAiPhrases.push(phrase);
   });
+  // Arabic AI phrases
+  const isArabic = /[؀-ۿ]/.test(text);
+  if (isArabic) {
+    AR_AI_PHRASES.forEach(phrase => {
+      if (text.includes(phrase)) foundAiPhrases.push(phrase);
+    });
+  }
 
   // Metrics summary with human-readable interpretations
   const metricsSummary = [
