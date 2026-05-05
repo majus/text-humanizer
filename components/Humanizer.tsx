@@ -149,6 +149,9 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
   // Comparison chart visibility (Phase 4)
   const [showComparisonChart, setShowComparisonChart] = useState(false);
 
+  // Word count limit
+  const [maxOutputWords, setMaxOutputWords] = useState(0); // 0 = no limit
+
   const wordCount = countWords(inputText);
   const hasAnyApiKey = Object.values(getApiKeys()).some(v => v && v.trim().length > 0);
 
@@ -210,6 +213,7 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
         body: JSON.stringify({
           text: inputText, level, style, tone, customTone,
           model: providerId, apiKey, targetScore, language, writingSample, purpose,
+          maxOutputWords: maxOutputWords || undefined,
           postprocess: enablePostprocess,
           chainModels: enableChain ? selectedChainModels : [],
           apiKeys: allApiKeys,
@@ -739,6 +743,14 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
                   <input type="range" min="50" max="100" step="5" value={targetScore} onChange={e => setTargetScore(Number(e.target.value))}
                     className="w-full accent-accent-500" />
                   <div className="flex justify-between text-xs text-dark-500 mt-1"><span>50%</span><span>75%</span><span>100%</span></div>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
+                    <Type className="w-4 h-4 text-accent-400" /> Max Output Words: {maxOutputWords === 0 ? 'Unlimited' : maxOutputWords}
+                  </label>
+                  <input type="range" min="0" max="5000" step="100" value={maxOutputWords} onChange={e => setMaxOutputWords(Number(e.target.value))}
+                    className="w-full accent-accent-500" />
+                  <div className="flex justify-between text-xs text-dark-500 mt-1"><span>None</span><span>2500</span><span>5000</span></div>
                 </div>
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-dark-300 mb-2">
