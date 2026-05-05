@@ -76,15 +76,29 @@ export function clearHistory(): void {
 }
 
 // Theme
+export function getSystemThemePreference(): 'dark' | 'light' {
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export function getTheme(): 'dark' | 'light' {
   if (typeof window === 'undefined') return 'dark';
   const stored = localStorage.getItem(KEYS.THEME);
-  return (stored === 'light' || stored === 'dark') ? stored : 'dark';
+  if (stored === 'system') return getSystemThemePreference();
+  return (stored === 'light' || stored === 'dark') ? stored : getSystemThemePreference();
 }
 
-export function setTheme(theme: 'dark' | 'light'): void {
+export function setTheme(theme: 'dark' | 'light' | 'system'): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(KEYS.THEME, theme);
+}
+
+export function onSystemThemeChange(callback: (theme: 'dark' | 'light') => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const mql = window.matchMedia('(prefers-color-scheme: dark)');
+  const handler = (e: MediaQueryListEvent) => callback(e.matches ? 'dark' : 'light');
+  mql.addEventListener('change', handler);
+  return () => mql.removeEventListener('change', handler);
 }
 
 // Visited flag
