@@ -152,6 +152,9 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
   // Word count limit
   const [maxOutputWords, setMaxOutputWords] = useState(0); // 0 = no limit
 
+  // Heatmap mode
+  const [showHeatmap, setShowHeatmap] = useState(false);
+
   const wordCount = countWords(inputText);
   const hasAnyApiKey = Object.values(getApiKeys()).some(v => v && v.trim().length > 0);
 
@@ -1045,6 +1048,9 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
                 <button onClick={() => setShowReadability(!showReadability)} className="p-2 rounded-lg hover:bg-dark-700/50 text-dark-400 hover:text-white transition-colors" title="Readability">
                   <Type className="w-4 h-4" />
                 </button>
+                <button onClick={() => setShowHeatmap(!showHeatmap)} className={`p-2 rounded-lg hover:bg-dark-700/50 transition-colors ${showHeatmap ? 'text-orange-400' : 'text-dark-400 hover:text-white'}`} title="Detection Heatmap">
+                  <BarChart2 className="w-4 h-4" />
+                </button>
                 <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-dark-700/50 text-dark-400 hover:text-white transition-colors" title="Copy">
                   <Copy className="w-4 h-4" />
                 </button>
@@ -1204,6 +1210,40 @@ export default function Humanizer({ showToast, onGoToSettings, isFirstVisit }: H
             </div>
           </div>
           <p className="text-xs text-dark-500 mt-3">Estimated score based on local heuristics. Real detectors (GPTZero, Originality.ai) may differ.</p>
+        </div>
+      )}
+
+      {/* Detection Heatmap */}
+      {showHeatmap && detection && (
+        <div className="bg-dark-800/50 border border-orange-500/20 rounded-xl p-4 animate-fade-in">
+          <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-orange-400" /> Detection Heatmap — Sentence-Level AI Scores
+          </h3>
+          <div className="space-y-1.5">
+            {detection.sentences.map((s, i) => {
+              const pct = Math.max(0, Math.min(100, s.score));
+              const hue = pct * 1.2;
+              const bgColor = `hsla(${hue}, 70%, 50%, 0.15)`;
+              const borderColor = `hsla(${hue}, 70%, 50%, 0.4)`;
+              const textColor = pct >= 60 ? 'text-green-400' : pct >= 40 ? 'text-yellow-400' : 'text-red-400';
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <span className={`text-xs font-mono w-8 text-right shrink-0 ${textColor}`}>{pct}%</span>
+                  <div className="flex-1 rounded px-2 py-1.5 overflow-hidden" style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}>
+                    <p className="text-xs text-dark-200 truncate">{s.text}</p>
+                  </div>
+                  <span className="text-[10px] text-dark-500 shrink-0 w-8 text-right">
+                    {s.classification === 'human' ? '✓' : s.classification === 'maybe' ? '~' : '✗'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 mt-3 text-[10px] text-dark-500">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/30 border border-green-500/50" /> Human (60%+)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-500/30 border border-yellow-500/50" /> Maybe (35-59%)</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/30 border border-red-500/50" /> AI (&lt;35%)</span>
+          </div>
         </div>
       )}
 
