@@ -1,111 +1,214 @@
+<div align="center">
+
 # StealthHumanizer
 
-> 🥷 Turn AI-generated text into **indistinguishably human writing** using multi-pass rewriting, statistical style modeling, and adaptive linguistic variation.
+**Free, open-source AI text humanizer. No login. No limits.**
+
+Transform AI-generated text into natural, human-like writing using multi-pass rewriting, style-aware processing, and statistical fingerprint disruption.
+
+[Live Demo](https://stealthhumanizer.vercel.app/) &middot;
+[Report Bug](https://github.com/rudra496/StealthHumanizer/issues) &middot;
+[Contribute](#-contributing)
 
 [![CI](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/rudra496/StealthHumanizer?sort=semver)](https://github.com/rudra496/StealthHumanizer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live-Demo-black?logo=vercel)](https://stealthhumanizer.vercel.app/)
+[![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)](https://github.com/rudra496/StealthHumanizer)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Good First Issues](https://img.shields.io/github/issues/rudra496/StealthHumanizer/good%20first%20issue.svg)](https://github.com/rudra496/StealthHumanizer/labels/good%20first%20issue)
+
+</div>
 
 ---
 
-## 🚀 Why This Exists
+## Why StealthHumanizer?
 
-AI-generated text is increasingly detectable due to:
-- predictable sentence structures
-- low burstiness
-- repetitive phrasing
+AI detectors (GPTZero, Originality.ai, Turnitin) catch AI text through statistical fingerprints:
+- **Low perplexity** — predictable, boring word choices
+- **Low burstiness** — uniform sentence lengths
+- **AI-typical phrases** — "furthermore," "it is important to note," "delve into"
+- **Rigid structure** — same paragraph pattern throughout
 
-**StealthHumanizer solves this** by applying:
-- statistical human writing patterns
-- multi-pass rewriting pipelines
-- linguistic variation engines
-
-→ Result: text that *reads, flows, and behaves like human writing*
+**StealthHumanizer disrupts all of these signals** with a 4-layer pipeline that produces text reading like a real person wrote it.
 
 ---
 
-## 🔥 Key Capabilities
+## Features
 
-- 🧠 **Style-aware rewriting engine** (trained on academic + natural corpora)
-- 🌀 **Multi-pass “Ninja Mode”** for deep transformation
-- 📊 **Human-likeness scoring** (burstiness, lexical diversity, transitions)
-- 🔌 **13 AI provider integrations**
-- 🎯 **Domain-aware adaptation** (11 disciplines)
-- 📄 **PDF/DOCX input support**
-- 🌍 **Multi-language rewriting**
+| Feature | Description |
+|---------|-------------|
+| **13 AI Providers** | Gemini (free), OpenAI, Claude, Groq (free), Mistral, Cohere, Together, OpenRouter, Cerebras, DeepInfra, HuggingFace, Cloudflare, ZAI |
+| **4 Rewrite Levels** | Light (subtle fixes), Medium (natural rewrite), Aggressive (complete rewrite), Ninja (maximum stealth) |
+| **6 Writing Styles** | Humanize, Academic, Professional, Casual, Creative, Technical |
+| **9 Text Purposes** | Essay, Article, Blog, Email, Marketing, Report, Story, Social Media, General |
+| **13 Tone Presets** | Conversational, Journalistic, Persuasive, Storytelling, Humorous, Analytical, and more |
+| **Multi-Pass Ninja Mode** | Auto-refinement loop targeting 90%+ human score |
+| **Style-Aware Processing** | Post-processing adapts to academic vs casual context |
+| **AI Detection Scoring** | 12-metric analysis with confidence intervals and detailed reports |
+| **File Upload** | Paste text or upload PDF/DOCX files |
+| **Grammar Check** | Built-in grammar and spell checking |
+| **16+ Languages** | English, Chinese (Simplified + Traditional), Spanish, French, German, Japanese, Korean, Arabic, Hindi, and more |
+| **Batch Processing** | Humanize multiple texts at once |
+| **Export** | Download as TXT, DOCX, or PDF |
+| **100% Private** | API keys stored in your browser only. No server-side data storage. |
 
 ---
 
-## ⚡ Demo
+## How It Works
 
-👉 Live App: https://stealthhumanizer.vercel.app/
+### 4-Layer Humanization Pipeline
+
+```
+Input Text → Layer 1: LLM Rewrite → Layer 2: Post-Processing → Layer 3: Multi-Model Chain → Layer 4: Final Polish → Output
+```
+
+**Layer 1 — LLM Rewrite**: Your chosen AI provider rewrites the text using anti-detection prompts that enforce burstiness, perplexity injection, and structural disruption.
+
+**Layer 2 — Non-LLM Post-Processing**: 500+ synonym swaps, 230+ collocation replacements, AI vocabulary removal, sentence length manipulation, typographic variation. Style-aware — academic text stays formal, casual text gets personality.
+
+**Layer 3 — Multi-Model Chain (Optional)**: Pass text through multiple AI providers to mix statistical fingerprints. Each model adds different patterns.
+
+**Layer 4 — Final Polish**: Light cleanup pass. Readability guard ensures quality doesn't degrade.
+
+### Detection Metrics
+
+The built-in detector analyzes:
+- Perplexity (word choice unpredictability)
+- Burstiness (sentence length variation)
+- Vocabulary diversity
+- AI phrase density
+- Passive voice ratio
+- Transition word frequency
+- Sentence start diversity
+- Hedging language
+- Quantifier overuse
+- Pronoun usage patterns
+
+---
+
+## Quick Start
 
 ```bash
-# Local setup
 git clone https://github.com/rudra496/StealthHumanizer.git
 cd StealthHumanizer
 npm install
 npm run dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) and add your API key in Settings. **Gemini is free** — get a key at [Google AI Studio](https://aistudio.google.com/apikey).
 
-## 🧪 How It Works (Pipeline)
-
-1. **LLM Rewrite Layer**
-   - injects statistical constraints (sentence length, entropy, variation)
-
-2. **Post-processing Engine**
-   - replaces AI-signature phrases
-   - introduces human-like irregularities
-
-3. **Scoring Layer**
-   - evaluates:
-     - burstiness
-     - vocabulary diversity
-     - readability
+Or use it live at [stealthhumanizer.vercel.app](https://stealthhumanizer.vercel.app/).
 
 ---
 
-## 🏗 Architecture Overview
+## Comparison
 
-- `app/` → frontend + API routes
-- `lib/` → core logic (rewriting + scoring)
-- `public/` → style models
-- `scripts/` → training + benchmarking
-
----
-
-## 📈 Use Cases
-
-- Academic writing refinement
-- AI content humanization
-- blog/article polishing
-- detection-resilient rewriting research
-
----
-
-## 🧭 Roadmap
-
-- [ ] CLI version (`npx stealthhumanizer`)
-- [ ] API service layer
-- [ ] fine-tuned local models
-- [ ] real detector benchmarking dashboard
+| | **StealthHumanizer** | **QuillBot** | **StealthWriter** | **Undetectable.ai** |
+|---|:---:|:---:|:---:|:---:|
+| Price | **Free** | $9.99/mo | $19/mo | $14.99/mo |
+| Open Source | **Yes (MIT)** | No | No | No |
+| AI Providers | **13** | 1 | 1 | 1 |
+| No Login Required | **Yes** | No | No | No |
+| Data Privacy | **Browser-only keys** | Server-side | Server-side | Server-side |
+| Multi-Language | **16+** | Limited | English only | English only |
+| Purpose Selector | **9 purposes** | No | No | No |
+| Style Presets | **6 styles** | 4 modes | 3 modes | 3 modes |
+| Tone Options | **13 tones** | 2 modes | No | No |
+| File Upload | **PDF, DOCX** | No | No | No |
+| Batch Processing | **Yes** | No | No | No |
+| Grammar Check | **Built-in** | Separate tool | No | No |
+| Custom Writing Sample | **Yes** | No | No | No |
+| Self-Hostable | **Yes** | No | No | No |
 
 ---
 
-## 👨‍💻 Author
+## Architecture
 
-**Rudra Sarker**  
-AI + IoT Builder | SUST
-
-- Portfolio: https://rudra496.github.io/site
-- GitHub: https://github.com/rudra496
-- LinkedIn: https://www.linkedin.com/in/rudrasarker
+```
+stealthhumanizer/
+├── app/                    # Next.js app router
+│   ├── api/                # API routes (humanize, detect, grammar, upload)
+│   ├── layout.tsx          # Root layout with SEO + structured data
+│   └── page.tsx            # Main page
+├── components/             # React components
+│   ├── Humanizer.tsx       # Main humanizer UI
+│   ├── BatchHumanizer.tsx  # Batch processing UI
+│   ├── Detector.tsx        # Standalone detector UI
+│   ├── Settings.tsx        # API key management
+│   └── Navbar.tsx          # Navigation
+├── lib/                    # Core logic
+│   ├── detector.ts         # 12-metric AI detection engine
+│   ├── prompts.ts          # Anti-detection prompt system (EN + ZH)
+│   ├── postprocess.ts      # Non-LLM post-processing engine
+│   ├── providers.ts        # 13 AI provider integrations
+│   ├── readability.ts      # Flesch, Kincaid, Coleman-Liau metrics
+│   └── server/             # Server-side modules
+│       ├── humanization-governance.ts  # Safety + regression guard
+│       ├── model-runtime.ts            # Logistic regression scorer
+│       └── text-utils.ts               # Tokenization utilities
+└── public/                 # Static assets + style models
+```
 
 ---
 
-## 📜 License
+## Contributing
 
-MIT License
+We love contributions! This is a community project and every PR helps.
+
+### Good First Issues
+
+Start with issues tagged [`good first issue`](https://github.com/rudra496/StealthHumanizer/labels/good%20first%20issue) — these are specifically scoped for new contributors.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feat/your-feature`
+3. Make your changes and test locally with `npm run dev`
+4. Commit with conventional style: `feat: add your feature`
+5. Push and open a Pull Request
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
+
+### Contributors
+
+<a href="https://github.com/rudra496/StealthHumanizer/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=rudra496/StealthHumanizer" />
+</a>
+
+---
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Charts**: [Recharts](https://recharts.org/)
+- **Deployment**: [Vercel](https://vercel.com/)
+
+---
+
+## Roadmap
+
+- [ ] Browser extension (Chrome/Firefox)
+- [ ] CLI tool (`npx stealthhumanizer`)
+- [ ] Fine-tuned local models for offline use
+- [ ] Real detector benchmarking dashboard
+- [ ] API service layer for programmatic access
+- [ ] Collaborative editing with version history
+
+---
+
+## Author
+
+**Rudra Sarker**
+
+[Portfolio](https://rudra496.github.io/site) &middot;
+[GitHub](https://github.com/rudra496) &middot;
+[LinkedIn](https://www.linkedin.com/in/rudrasarker)
+
+---
+
+## License
+
+[MIT License](./LICENSE) &copy; 2024 Rudra Sarker. Free for personal and commercial use.
