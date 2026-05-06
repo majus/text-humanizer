@@ -1,5 +1,3 @@
-<div align="center">
-
 # StealthHumanizer
 
 **Free, open-source AI text humanizer. No login. No limits.**
@@ -8,7 +6,7 @@ Transform AI-generated text into natural, human-like writing using multi-pass re
 
 [Live Demo](https://stealthhumanizer.vercel.app/) &middot;
 [Report Bug](https://github.com/rudra496/StealthHumanizer/issues) &middot;
-[Contribute](#-contributing)
+[Contribute](#contributing)
 
 [![CI](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
@@ -16,8 +14,6 @@ Transform AI-generated text into natural, human-like writing using multi-pass re
 [![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)](https://github.com/rudra496/StealthHumanizer)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Good First Issues](https://img.shields.io/github/issues/rudra496/StealthHumanizer/good%20first%20issue.svg)](https://github.com/rudra496/StealthHumanizer/labels/good%20first%20issue)
-
-</div>
 
 ---
 
@@ -171,9 +167,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
 
 ### Contributors
 
-<a href="https://github.com/rudra496/StealthHumanizer/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=rudra496/StealthHumanizer" />
-</a>
+[![Contributors](https://contrib.rocks/image?repo=rudra496/StealthHumanizer)](https://github.com/rudra496/StealthHumanizer/graphs/contributors)
 
 ---
 
@@ -201,7 +195,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
 
 ## Author
 
-**Rudra Sarker**
+### Rudra Sarker
 
 [Portfolio](https://rudra496.github.io/site) &middot;
 [GitHub](https://github.com/rudra496) &middot;
