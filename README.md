@@ -1,19 +1,27 @@
+<div align="center">
+
 # StealthHumanizer
 
 **Free, open-source AI text humanizer. No login. No limits.**
 
 Transform AI-generated text into natural, human-like writing using multi-pass rewriting, style-aware processing, and statistical fingerprint disruption.
 
-[Live Demo](https://stealthhumanizer.vercel.app/) &middot;
-[Report Bug](https://github.com/rudra496/StealthHumanizer/issues) &middot;
-[Contribute](#contributing)
+[![Try it Live](https://img.shields.io/badge/Try_it_Live-stealthhumanizer.vercel.app-black?logo=vercel&style=for-the-badge)](https://stealthhumanizer.vercel.app/)
 
+[![GitHub stars](https://img.shields.io/github/stars/rudra496/StealthHumanizer?style=social)](https://github.com/rudra496/StealthHumanizer/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/rudra496/StealthHumanizer?style=social)](https://github.com/rudra496/StealthHumanizer/fork)
 [![CI](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml/badge.svg)](https://github.com/rudra496/StealthHumanizer/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live-Demo-black?logo=vercel)](https://stealthhumanizer.vercel.app/)
-[![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)](https://github.com/rudra496/StealthHumanizer)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Good First Issues](https://img.shields.io/github/issues/rudra496/StealthHumanizer/good%20first%20issue.svg)](https://github.com/rudra496/StealthHumanizer/labels/good%20first%20issue)
+
+> **If this saves you money on paid humanizers, consider giving it a star -- it helps others find it.**
+
+</div>
+
+---
+
+> **Try it now: [stealthhumanizer.vercel.app](https://stealthhumanizer.vercel.app/) -- paste AI text, pick a free provider (Gemini), click humanize. Done.**
 
 ---
 
@@ -193,13 +201,28 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
 
 ---
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=rudra496/StealthHumanizer&type=Date)](https://star-history.com/#rudra496/StealthHumanizer&Date)
+
+---
+
 ## Author
 
 ### Rudra Sarker
 
 [Portfolio](https://rudra496.github.io/site) &middot;
 [GitHub](https://github.com/rudra496) &middot;
-[LinkedIn](https://www.linkedin.com/in/rudrasarker)
+[LinkedIn](https://www.linkedin.com/in/rudrasarker) &middot;
+[Twitter/X](https://x.com/Rudra496)
+
+---
+
+## Alternatives (SEO)
+
+If you're searching for any of these, **StealthHumanizer is the free, open-source alternative**:
+
+QuillBot alternative, Undetectable.ai alternative, StealthWriter alternative, Hix Bypass alternative, Bypass AI detection, AI humanizer free, Humanize AI text free, Free AI detector bypass, Open source AI humanizer, GPTZero bypass, Turnitin bypass, AI text rewriter free, Make AI text undetectable, AI to human text converter
 
 ---
 
