@@ -687,6 +687,7 @@ export interface PostProcessOptions {
   light?: boolean; // If true, apply lighter version (for Layer 4)
   style?: StylePreset; // Adjust transformations to match writing style
   skipReadabilityGuard?: boolean; // For internal use when re-applying light passes
+  aggressiveSynonyms?: boolean; // If false, skip aggressiveSynonymSwap. Default: true.
 }
 
 /**
@@ -702,8 +703,13 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
   // ALWAYS: Strip em-dashes (strongest AI tell). Numeric ranges preserved.
   result = stripAIDashes(result);
 
-  // ALWAYS: Aggressive AI vocabulary removal (style-aware)
-  result = aggressiveSynonymSwap(result, style);
+  // Aggressive AI vocabulary removal (style-aware). Skippable per-call.
+  // The pass makes context-blind global replacements that occasionally damage
+  // meaning ("first" -> "to start", "deal" -> "address"); turn off when
+  // semantic precision matters more than vocabulary variation.
+  if (options?.aggressiveSynonyms !== false) {
+    result = aggressiveSynonymSwap(result, style);
+  }
 
   // ALWAYS: Collocation replacements
   result = injectPerplexity(result);
