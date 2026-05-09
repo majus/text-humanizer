@@ -20,10 +20,12 @@ function chance(probability: number): boolean {
 }
 
 function splitSentences(text: string): string[] {
-  // Protect periods inside version numbers, decimals, and IPs (e.g., "Llama 3.x",
-  // "Python 3.11", "0.5", "192.168.1.1") so they aren't treated as sentence boundaries.
+  // Protect periods inside identifiers, file extensions, domains, decimals, version
+  // numbers, and IPs (e.g., "Llama 3.x", "0.5", "192.168.1.1", "file.ext",
+  // "docs.example.com", "tailwind.config.js") so they aren't treated as sentence
+  // boundaries. Match alnum-period-alnum with no whitespace on either side.
   const PERIOD_PLACEHOLDER = '';
-  const protectedText = text.replace(/(\d)\.(?=[a-zA-Z0-9])/g, `$1${PERIOD_PLACEHOLDER}`);
+  const protectedText = text.replace(/([a-zA-Z0-9])\.(?=[a-zA-Z0-9])/g, `$1${PERIOD_PLACEHOLDER}`);
   return protectedText.match(/[^.!?]*[.!?]+[\s]*/g)
     ?.map(s => s.trim().replace(new RegExp(PERIOD_PLACEHOLDER, 'g'), '.'))
     .filter(s => s.length > 0) || [text.trim()];

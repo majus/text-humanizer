@@ -17,12 +17,13 @@ function splitIntoSentences(text: string): string[] {
     current += text[i];
     if (['.', '!', '?'].includes(text[i])) {
       const beforeMatch = text.slice(Math.max(0, i - 5), i + 1);
-      // Period inside a version/decimal/IP number (digit . alnum) is not a sentence end:
-      // "Llama 3.x", "Python 3.11", "0.5", "192.168.1.1".
-      const isVersionOrDecimal = text[i] === '.'
-        && /\d/.test(text[i - 1] || '')
+      // Period inside an identifier (file.ext, domain.tld, version 3.x, decimal 0.5,
+      // IP 192.168.1.1) is not a sentence end. Detect by alnum-period-alnum with no
+      // whitespace on either side. Subsumes the prior digit-only protection.
+      const isInsideIdentifier = text[i] === '.'
+        && /[a-zA-Z0-9]/.test(text[i - 1] || '')
         && /[a-zA-Z0-9]/.test(text[i + 1] || '');
-      if (!isVersionOrDecimal && !abbreviations.some(abbr => beforeMatch.endsWith(abbr))) {
+      if (!isInsideIdentifier && !abbreviations.some(abbr => beforeMatch.endsWith(abbr))) {
         if (text[i + 1] === '"' || text[i + 1] === "'") { current += text[i + 1]; i++; }
         const trimmed = current.trim();
         if (trimmed.length > 0) sentences.push(trimmed);
