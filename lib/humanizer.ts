@@ -58,11 +58,20 @@ async function humanizeChunk(
     ? 'CRITICAL: The text contains tokens of the form __PROTECT_N__ (where N is a number). Reproduce every such token EXACTLY as it appears, with no changes, no spaces inside, no translation. They are placeholders that will be restored after rewriting.\n\n'
     : '';
 
+  // Anchor the LLM on input length and structure so it doesn't summarize,
+  // expand, or flatten paragraph/list/heading layout. Past observations: the
+  // default casual rewrite drifts toward shorter prose (typically -25%) and
+  // collapses paragraph breaks within a chunk.
+  const inputWords = countWords(text);
+  const lengthAnchor = `Length target: approximately ${inputWords} words (±15%). Do not summarize, condense, or significantly expand.`;
+  const structureAnchor = 'Keep the original structure intact: preserve paragraph breaks (blank lines), bullet/numbered lists, headings, and line breaks. Do not merge or split paragraphs.';
+  const anchors = `${lengthAnchor}\n${structureAnchor}\n\n`;
+
   const fullPrompt = options.language === 'zh-CN' || options.language === 'zh-TW'
-    ? `${placeholderInstruction}待改写的文本：\n\n${text}`
+    ? `${placeholderInstruction}${anchors}待改写的文本：\n\n${text}`
     : options.language !== 'en'
-    ? `${placeholderInstruction}IMPORTANT: The text is in a language other than English. Rewrite it in the SAME language. Do not translate.\n\nText to humanize:\n\n${text}`
-    : `${placeholderInstruction}Text to humanize:\n\n${text}`;
+    ? `${placeholderInstruction}${anchors}IMPORTANT: The text is in a language other than English. Rewrite it in the SAME language. Do not translate.\n\nText to humanize:\n\n${text}`
+    : `${placeholderInstruction}${anchors}Text to humanize:\n\n${text}`;
 
   return generateWithProvider(options.model, apiKey, systemPrompt, fullPrompt, { model });
 }
