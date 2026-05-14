@@ -711,7 +711,11 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
   if (light) {
     result = swapSynonyms(result);
     if (chance(0.5)) result = addPunctuationNoise(result);
-    if (chance(0.3)) result = disruptFlow(result, style);
+    // Skip disruptFlow in light mode: it injects emphasis fillers ("Right.",
+    // "Sound familiar?", "Funny enough.") and conjunction starters at fixed
+    // per-paragraph rates, which compounds badly on long inputs and reads as
+    // an AI tic itself. Full mode keeps it for cases that explicitly want
+    // structural disruption.
     return result
       .replace(/,\s*,/g, ',')
       .replace(/\s+,/g, ',')
