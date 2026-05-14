@@ -105,7 +105,7 @@ export async function humanizeText(
   if (hasStyleModel()) {
     currentText = corpusAwarePostprocess(currentText);
   }
-  currentText = postprocess(currentText, { light: true });
+  currentText = postprocess(currentText, { light: true, aggressiveSynonyms: options.aggressiveSynonyms });
 
   let passes = 1;
 
@@ -135,7 +135,7 @@ export async function humanizeText(
           }
           return orig;
         });
-        currentText = postprocess(newSentences.join(' '), { light: true });
+        currentText = postprocess(newSentences.join(' '), { light: true, aggressiveSynonyms: options.aggressiveSynonyms });
         passes = pass;
       } catch {
         break;
