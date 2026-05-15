@@ -5,7 +5,7 @@ import { getSystemPrompt, getRehumanizePrompt, getCorpusAwareSystemPrompt } from
 import { getCorpusCalibratedThresholds, hasStyleModel, loadStyleModelAsync } from './style-model';
 import { generateWithProvider, getProvider, generateAlternatives } from './providers';
 import { detectAI } from './detector';
-import { postprocess, corpusAwarePostprocess } from './postprocess';
+import { postprocess, corpusAwarePostprocess, normalizePunctuation } from './postprocess';
 import { chunkText, countWords, addToHistory } from './storage';
 import { extractRegions, restoreRegions, containsPlaceholders } from './protect-regions';
 
@@ -106,10 +106,16 @@ export async function humanizeText(
   const targetScore = options.targetScore || calibratedThresholds?.targetScore || 80;
   const maxPasses = options.level === 'ninja' ? 2 : options.level === 'aggressive' ? 2 : 1;
 
+  // Normalize typographic punctuation up front so curly quotes / ellipsis from
+  // the original input (often pasted from Word/Pages/macOS keyboards) don't
+  // survive inside protected regions. Code spans/fences are normalized too, but
+  // the substitutions only affect quotes, ellipsis, and NBSP, not code syntax.
+  const normalizedInput = normalizePunctuation(text);
+
   // Extract structural regions (code, links, URLs, mentions, blockquotes, ...)
   // before any processing. They survive the pipeline as opaque placeholders and
   // are restored verbatim at the end.
-  const { masked, regions } = extractRegions(text);
+  const { masked, regions } = extractRegions(normalizedInput);
   const chunks = chunkText(masked, 2500);
 
   let humanizedText = '';

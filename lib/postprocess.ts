@@ -196,6 +196,23 @@ function stripAIDashes(text: string): string {
     .replace(new RegExp(RANGE_PLACEHOLDER, 'g'), '–');
 }
 
+// ==================== 2b''. NORMALIZE TYPOGRAPHIC PUNCTUATION ====================
+
+// Curly quotes, smart apostrophes, and horizontal ellipsis are another common AI
+// tell (and also a copy-paste hazard from Word/Pages/macOS keyboards). Normalize
+// to ASCII so the body of the rewrite uses only `'`, `"`, and `...`. Code spans
+// and fences are preserved upstream by the protect-regions pass; this only ever
+// runs on prose.
+export function normalizePunctuation(text: string): string {
+  return text
+    .replace(/[‘’‚‛]/g, "'")   // curly singles, low-9, high-reversed-9
+    .replace(/[“”„‟]/g, '"')   // curly doubles, low-9, high-reversed-9
+    .replace(/[‹›]/g, "'")               // single guillemets
+    .replace(/[«»]/g, '"')               // double guillemets
+    .replace(/…/g, '...')                     // horizontal ellipsis
+    .replace(/ /g, ' ');                      // non-breaking space
+}
+
 // ==================== 2c. PUNCTUATION & FORMATTING NOISE ====================
 
 const CONTRACTIONS: [string, string][] = [
@@ -699,6 +716,10 @@ export function postprocess(text: string, options?: PostProcessOptions): string 
   const light = options?.light ?? false;
   const style = options?.style;
   let result = text;
+
+  // ALWAYS: Normalize typographic punctuation (curly quotes, ellipsis, NBSP).
+  // Done early so downstream steps see ASCII-only chars.
+  result = normalizePunctuation(result);
 
   // ALWAYS: Strip em-dashes (strongest AI tell). Numeric ranges preserved.
   result = stripAIDashes(result);
